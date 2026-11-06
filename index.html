@@ -552,7 +552,7 @@ function flattenSections(sections){
   var out = [];
   (sections || []).forEach(function(sec, si){
     (sec.steps || []).forEach(function(st, sti){
-      out.push({ sectionIndex: si, stepIndex: sti, sectionName: sec.name, text: st.text, repeatCount: st.repeatCount, rowsPerRepeat: st.rowsPerRepeat });
+      out.push({ sectionIndex: si, stepIndex: sti, sectionName: sec.name, text: st.text, translation: st.translation || null, repeatCount: st.repeatCount, rowsPerRepeat: st.rowsPerRepeat });
     });
   });
   return out;
@@ -863,7 +863,7 @@ function extractSectionsPipeline(w, onDone){
   if (!sample){ w.busy = false; onDone([]); return; }
 
   var namesPrompt = "Liste uniquement les noms des sections/parties principales de ce patron de tricot, dans l'ordre où elles apparaissent, "
-    + "sous forme d'un tableau JSON de chaînes courtes (ex: [\"Dos\",\"Manches\",\"Col\"]). Réponds uniquement avec ce tableau JSON, rien d'autre.\n\n"
+    + "sous forme d'un tableau JSON de chaînes courtes (ex: [\"Dos\",\"Manches\",\"Col\"]), écrits dans la langue du patron exactement comme dans le texte (ne traduis pas). Réponds uniquement avec ce tableau JSON, rien d'autre.\n\n"
     + "--- TEXTE DU PATRON ---\n" + w.rawText;
 
   function runQueue(queue){
@@ -883,7 +883,8 @@ function extractSectionsPipeline(w, onDone){
       + "Autre cas : quand une étape répète seulement un motif à l'intérieur d'un même rang (ex : « *k2, p2* répéter 6 fois » dans un seul rang) ou "
       + "une instruction simple un certain nombre de fois sans que ce soit un bloc de plusieurs rangs numérotés, mets ce nombre dans repeatCount mais "
       + "laisse rowsPerRepeat à null. Si l'étape n'a aucune répétition, repeatCount et rowsPerRepeat doivent être null tous les deux. "
-      + "Garde le texte fidèle à l'original (nombres de mailles inclus), écrit clairement.\n\n"
+      + "Garde le texte fidèle à l'original (nombres de mailles inclus), écrit clairement, et SURTOUT dans la langue d'origine du patron : "
+      + "si le patron est en anglais, les étapes restent en anglais avec ses abréviations (k, p, k2tog, RS, WS...) ; ne traduis rien.\n\n"
       + "Réponds uniquement avec un JSON de cette forme exacte, sans texte autour ni balises markdown :\n"
       + "{\"steps\": [ { \"text\": string, \"repeatCount\": number|null, \"rowsPerRepeat\": number|null } ] }\n\n"
       + "--- TEXTE COMPLET DU PATRON ---\n" + w.rawText;
@@ -1140,6 +1141,7 @@ function renderProject(){
       el("div", {class:"step-eyebrow"}, [cur.sectionName || ""]),
       el("div", {class:"step-text"}, [cur.text || ""])
     ]);
+    stepCard.appendChild(renderTranslationBox(p, cur, flat));
     if (cur.rowsPerRepeat && cur.rowsPerRepeat > 1 && cur.repeatCount){
       var rpTotal = cur.rowsPerRepeat;
       var rpRepeat = cur.repeatCount;
@@ -1203,6 +1205,108 @@ function renderProject(){
   ]));
 
   return wrap;
+}
+
+// ---------- TRANSLATION (on demand only) ----------
+// Steps stay in the pattern's own language. A translation is fetched only
+// when the knitter asks, then kept on the step (step.translation) so it
+// also travels in the export to the standalone app.
+function renderTranslationBox(p, cur, flat){
+  var box = el("div", {style:"display:flex;flex-direction:column;gap:6px;"}, []);
+  var key = cur.sectionIndex + ":" + cur.stepIndex;
+  var busy = state.translateBusy === key;
+  if (cur.translation && state.showTranslation){
+    box.appendChild(el("div", {class:"row-note", style:"font-style:italic;white-space:pre-wrap;"}, [cur.translation]));
+  }
+  if (state.translateError){
+    box.appendChild(el("div", {class:"small-note", style:"color:var(--danger);"}, [state.translateError]));
+  }
+  var links = [];
+  if (cur.translation){
+    links.push(el("button", {class:"link-btn", onclick:function(){ state.showTranslation = !state.showTranslation; render(); }},
+      [state.showTranslation ? "Masquer la traduction" : "Voir la traduction"]));
+  } else if (sample){
+    links.push(el("button", {class:"link-btn", disabled: busy || !!state.translateAllBusy, onclick:function(){ translateStep(p, cur.sectionIndex, cur.stepIndex); }},
+      [busy ? "Traduction..." : "Traduire en français"]));
+  }
+  var missing = flat.filter(function(f){ return !f.translation && (f.text || "").trim(); }).length;
+  if (sample && missing > 1){
+    links.push(el("button", {class:"link-btn", disabled: !!state.translateAllBusy || busy, onclick:function(){ translateAll(p); }},
+      [state.translateAllBusy ? state.translateAllBusy : "Traduire tout le patron (" + missing + " étapes)"]));
+  }
+  if (links.length) box.appendChild(el("div", {style:"display:flex;flex-wrap:wrap;gap:4px 16px;"}, links));
+  return box.childNodes.length ? box : document.createComment("no translation");
+}
+
+var TRANSLATE_RULES = "Traduis en français des instructions de tricot. Utilise la terminologie française du tricot "
+  + "(k / knit = maille endroit, p / purl = maille envers, k2tog = 2 mailles ensemble à l'endroit, ssk = surjet simple, yo = jeté, "
+  + "RS = endroit du travail, WS = envers du travail, CO = monter, BO = rabattre, pm = placer un marqueur, sl = glisser, rep = répéter...). "
+  + "Garde exactement les nombres, les numéros de rangs et la structure (retours à la ligne compris). Ne rajoute aucune explication.";
+
+function saveTranslations(p, apply){
+  var sections = cloneSections(p);
+  apply(sections);
+  p.sections = sections;
+  commitSections(sections);
+}
+
+function translateStep(p, si, sti){
+  var st = p.sections && p.sections[si] && p.sections[si].steps[sti];
+  if (!sample || !st) return;
+  state.translateBusy = si + ":" + sti; state.translateError = null; render();
+  sample(TRANSLATE_RULES + " Réponds uniquement avec la traduction.\n\n--- INSTRUCTION ---\n" + st.text, { modelTier: "quick" }).then(function(r){
+    state.translateBusy = null;
+    var t = (r && r.text || "").trim();
+    if (!t) return render();
+    if (state.currentDoc !== p) return;
+    saveTranslations(p, function(sections){ if (sections[si] && sections[si].steps[sti]) sections[si].steps[sti].translation = t; });
+    state.showTranslation = true;
+    render();
+  }).catch(function(err){
+    console.error(err);
+    state.translateBusy = null;
+    state.translateError = sampleErrorMessage(err).replace("La structuration automatique a échoué.", "La traduction a échoué, réessaie.");
+    render();
+  });
+}
+
+function translateAll(p){
+  if (!sample) return;
+  var jobs = [];
+  (p.sections || []).forEach(function(sec, si){
+    var idxs = [];
+    (sec.steps || []).forEach(function(st, sti){ if (!st.translation && (st.text || "").trim()) idxs.push(sti); });
+    if (idxs.length) jobs.push({ si: si, idxs: idxs });
+  });
+  if (!jobs.length) return;
+  state.translateError = null;
+  var done = 0, total = jobs.reduce(function(n, j){ return n + j.idxs.length; }, 0);
+  state.translateAllBusy = "Traduction... 0 / " + total; render();
+  jobs.reduce(function(chain, job){
+    return chain.then(function(){
+      var texts = job.idxs.map(function(sti){ return p.sections[job.si].steps[sti].text; });
+      return sample.json(TRANSLATE_RULES + "\n\nVoici un tableau JSON de " + texts.length + " instructions. Réponds uniquement avec un tableau JSON de "
+        + texts.length + " chaînes : la traduction de chaque instruction, dans le même ordre.\n\n" + JSON.stringify(texts), { modelTier: "default" })
+      .then(function(arr){
+        if (!Array.isArray(arr)) return;
+        saveTranslations(p, function(sections){
+          job.idxs.forEach(function(sti, k){
+            var t = arr[k];
+            if (typeof t === "string" && t.trim() && sections[job.si] && sections[job.si].steps[sti]) sections[job.si].steps[sti].translation = t.trim();
+          });
+        });
+      }).catch(function(err){ console.error("translate section failed", err); state.translateError = "Une partie de la traduction a échoué, tu peux relancer."; })
+      .then(function(){
+        done += job.idxs.length;
+        state.translateAllBusy = "Traduction... " + done + " / " + total;
+        if (state.currentDoc === p && state.activePanel !== "edit") render();
+      });
+    });
+  }, Promise.resolve()).then(function(){
+    state.translateAllBusy = null;
+    state.showTranslation = true;
+    render();
+  });
 }
 
 function currentRef(){
@@ -2204,7 +2308,8 @@ function importProjectFromFile(file){
           return {
             text: String((st && st.text) || ""),
             repeatCount: (st && typeof st.repeatCount === "number") ? st.repeatCount : null,
-            rowsPerRepeat: (st && typeof st.rowsPerRepeat === "number") ? st.rowsPerRepeat : null
+            rowsPerRepeat: (st && typeof st.rowsPerRepeat === "number") ? st.rowsPerRepeat : null,
+            translation: (st && typeof st.translation === "string" && st.translation.trim()) ? st.translation : null
           };
         })
       };
@@ -2312,6 +2417,7 @@ function updateStepField(si, sti, field, val){
   var sections = cloneSections(p);
   if (!sections[si] || !sections[si].steps[sti]) return;
   sections[si].steps[sti][field] = val;
+  if (field === "text") delete sections[si].steps[sti].translation;
   p.sections = sections;
   commitSections(sections);
 }
