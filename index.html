@@ -351,6 +351,10 @@ input[type=text]:focus, textarea:focus, select:focus{outline:2px solid var(--acc
 hr.sep{border:none;border-top:1px solid var(--line);margin:2px 0;}
 .confirm-inline{display:flex;gap:8px;align-items:center;}
 .small-note{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+.tool-bar{display:flex;flex-wrap:wrap;gap:8px;}
+.tool-chip{padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--accent-ink);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+.tool-chip.active{background:var(--accent);border-color:var(--accent);color:var(--surface);}
+.tool-chip:disabled{opacity:.5;cursor:default;}
 .chart-scroll{overflow-x:auto;overflow-y:auto;max-height:56vh;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);padding:6px 0;}
 .chart-row{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;cursor:pointer;width:100%;box-sizing:border-box;}
 .chart-row.current{background:var(--accent-soft);}
@@ -1063,6 +1067,23 @@ function renderProject(){
   var progress = p.progress || { flatIndex:0, tally:0 };
   var idx = Math.min(progress.flatIndex || 0, Math.max(flat.length - 1, 0));
 
+  // toolbar
+  function togglePanel(name){
+    state.activePanel = (state.activePanel === name) ? null : name;
+    render();
+  }
+  function toolChip(name, label){
+    var on = state.activePanel === name;
+    return el("button", {class:"tool-chip" + (on ? " active" : ""), onclick:function(){ togglePanel(name); }}, [on ? label + " ✕" : label]);
+  }
+  main.appendChild(el("div", {class:"tool-bar"}, [
+    toolChip("reference", "Aide-mémoire"),
+    toolChip("charts", "Grilles"),
+    toolChip("edit", "Modifier le patron"),
+    sample ? el("button", {class:"tool-chip", onclick:openChangeSize}, ["Changer de taille"]) : null,
+    (assets || LOCAL_MODE) ? el("button", {class:"tool-chip", onclick:function(){ pickImage(function(f){ setProjectCover(p.id, f); }); }}, [state.coverBusy === p.id ? "Envoi de la photo..." : ((p.coverImageId || p.coverData) ? "Changer la photo" : "Ajouter une photo")]) : null
+  ]));
+
   // section nav
   if ((p.sections||[]).length){
     var nav = el("div", {class:"section-nav"}, []);
@@ -1106,10 +1127,12 @@ function renderProject(){
     main.appendChild(renderReferencePanel(p));
   } else if (state.activePanel === "charts"){
     main.appendChild(renderChartsPanel(p));
+  } else if (state.activePanel === "edit"){
+    main.appendChild(renderEditor(p));
   } else if (!flat.length){
     main.appendChild(el("div", {class:"empty"}, [
       el("div", {class:"display"}, ["Pas encore d'étapes"]),
-      el("div", {}, ["Ajoute des étapes à la main via le mode édition ci-dessous."])
+      el("div", {}, ["Ajoute des étapes à la main avec « Modifier le patron », en haut."])
     ]));
   } else {
     var cur = flat[idx];
@@ -1164,26 +1187,10 @@ function renderProject(){
     main.appendChild(stepCard);
   }
 
-  function togglePanel(name){
-    state.activePanel = (state.activePanel === name) ? null : name;
-    render();
-  }
-
-  main.appendChild(el("div", {class:"toggle-row"}, [
-    el("div", {style:"display:flex;gap:14px;flex-wrap:wrap;"}, [
-      el("button", {class:"link-btn", onclick:function(){ togglePanel("reference"); }}, [state.activePanel==="reference" ? "Fermer l'aide-mémoire" : "Aide-mémoire"]),
-      el("button", {class:"link-btn", onclick:function(){ togglePanel("charts"); }}, [state.activePanel==="charts" ? "Fermer les grilles" : "Grilles"]),
-      (assets || LOCAL_MODE) ? el("button", {class:"link-btn", onclick:function(){ pickImage(function(f){ setProjectCover(p.id, f); }); }}, [state.coverBusy === p.id ? "Envoi de la photo..." : ((p.coverImageId || p.coverData) ? "Changer la photo" : "Ajouter une photo")]) : null,
-      downloads ? el("button", {class:"link-btn", disabled: !!state.exportBusy, onclick:function(){ exportProject(p); }}, [state.exportBusy ? "Préparation de l'export..." : "Exporter ce projet"]) : null
-    ]),
-    el("div", {style:"display:flex;gap:14px;"}, [
-      el("button", {class:"link-btn", onclick:function(){ togglePanel("edit"); }}, [state.activePanel==="edit" ? "Fermer l'édition" : "Modifier le patron"]),
-      sample ? el("button", {class:"link-btn", onclick:openChangeSize}, ["Changer de taille"]) : null
-    ])
-  ]));
-
-  if (state.activePanel === "edit"){
-    main.appendChild(renderEditor(p));
+  if (downloads){
+    main.appendChild(el("div", {style:"display:flex;justify-content:center;"}, [
+      el("button", {class:"link-btn", disabled: !!state.exportBusy, onclick:function(){ exportProject(p); }}, [state.exportBusy ? "Préparation de l'export..." : "Exporter ce projet"])
+    ]));
   }
 
   wrap.appendChild(main);
