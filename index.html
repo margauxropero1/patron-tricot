@@ -169,7 +169,7 @@ main{
 .pc-thumb-empty:hover{border-color:var(--accent);}
 .project-card:hover{border-color:var(--accent);}
 .project-card .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
-.project-card .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;}
+.project-card .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;flex:1;min-width:0;overflow-wrap:anywhere;}
 .project-card .size-pill{
   font-size:11.5px;color:var(--ink-soft);
   background:var(--surface-2);
@@ -385,6 +385,7 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:2px 0;}
 "use strict";
 
 var db = null, sample = null, assets = null, downloads = null, capsReady = false;
+var localFiles = null; // standalone build: big files (PDF) kept apart from the project record
 var LOCAL_MODE = false; // true in the standalone (non-claude.ai) build
 var state = {
   view: "home",
@@ -486,7 +487,7 @@ function renderProjectCard(p){
   return el("div", {class:"project-card", onclick: confirming ? null : function(){ openProject(p.id); }}, [thumb, el("div", {class:"pc-body"}, [
     el("div", {class:"row"}, [
       el("div", {class:"name"}, [p.title || "Patron sans nom"]),
-      el("div", {style:"display:flex;align-items:center;gap:8px;"}, [
+      el("div", {style:"display:flex;align-items:center;gap:8px;flex:none;"}, [
         sizeLabel ? el("div", {class:"size-pill"}, [sizeLabel]) : null,
         confirming
           ? el("div", {class:"confirm-inline", onclick:function(e){ e.stopPropagation(); }}, [
@@ -732,6 +733,7 @@ function handlePdfFile(e){
       }
       w.rawText = txt.slice(0, 30000);
       w.pdfDoc = lastPdfDoc;
+      w.pdfFile = file;
       if (lastPdfCover && assets){
         w.coverPromise = assets.upload(lastPdfCover).then(function(r){ return r.id; }).catch(function(e){ console.error("cover upload failed", e); return null; });
       }
@@ -752,13 +754,15 @@ function handlePdfFile(e){
   reader.readAsArrayBuffer(file);
 }
 
+var PDF_JS_SRC = "pdf.min.js";
+var PDF_WORKER_SRC = "pdf.worker.min.js";
 var pdfJsLoadPromise = null;
 function loadPdfJs(){
   if (window.pdfjsLib) return Promise.resolve();
   if (pdfJsLoadPromise) return pdfJsLoadPromise;
   pdfJsLoadPromise = new Promise(function(resolve, reject){
     var s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.src = PDF_JS_SRC;
     s.onload = function(){ resolve(); };
     s.onerror = function(){ pdfJsLoadPromise = null; reject(new Error("pdfjs failed to load")); };
     document.head.appendChild(s);
@@ -772,7 +776,7 @@ function extractPdfText(arrayBuffer){
     return Promise.reject(new Error("pdfjs not loaded"));
   }
   try{
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC;
   }catch(e){}
   lastPdfCover = null;
   lastPdfDoc = null;
@@ -1016,6 +1020,7 @@ function finishProjectCreation(w, sections, referencePromise){
     var seeded = Object.assign({}, docData, { id: ref.id });
     openProject(ref.id, seeded);
     if (w.chartsPromise) attachPdfCharts(w, ref.id);
+    if (w.pdfFile) attachPdfToProject(ref.id, w.pdfFile);
     if (w.coverPromise){
       w.coverPromise.then(function(coverId){
         if (!coverId) return;
@@ -1082,6 +1087,7 @@ function renderProject(){
   main.appendChild(el("div", {class:"tool-bar"}, [
     toolChip("reference", "Aide-mémoire"),
     toolChip("charts", "Grilles"),
+    toolChip("pdf", "PDF"),
     toolChip("edit", "Modifier le patron"),
     sample ? el("button", {class:"tool-chip", onclick:openChangeSize}, ["Changer de taille"]) : null,
     (assets || LOCAL_MODE) ? el("button", {class:"tool-chip", onclick:function(){ pickImage(function(f){ setProjectCover(p.id, f); }); }}, [state.coverBusy === p.id ? "Envoi de la photo..." : ((p.coverImageId || p.coverData) ? "Changer la photo" : "Ajouter une photo")]) : null
@@ -1130,6 +1136,8 @@ function renderProject(){
     main.appendChild(renderReferencePanel(p));
   } else if (state.activePanel === "charts"){
     main.appendChild(renderChartsPanel(p));
+  } else if (state.activePanel === "pdf"){
+    main.appendChild(renderPdfPanel(p));
   } else if (state.activePanel === "edit"){
     main.appendChild(renderEditor(p));
   } else if (!flat.length){
@@ -1467,6 +1475,8 @@ function applyChangeSize(){
 function deleteProject(id){
   if (!db) return;
   state.confirmDelete = null;
+  var gone = state.projects.filter(function(p){ return p.id === id; })[0];
+  if (gone && gone.pdfFileId && localFiles) localFiles.delete(gone.pdfFileId).catch(function(){});
   state.projects = state.projects.filter(function(p){ return p.id !== id; });
   goHome(true); // optimistic — don't wait on the round trip
   db.collection("projects").doc(id).delete().catch(function(err){
@@ -2372,7 +2382,7 @@ function rescanChartsFromPdf(p){
     render();
     f.arrayBuffer().then(function(buf){
       return loadPdfJs().then(function(){
-        try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; } catch(e){}
+        try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC; } catch(e){}
         return window.pdfjsLib.getDocument({ data: buf }).promise;
       });
     }).then(function(pdf){
@@ -2518,6 +2528,136 @@ function removeChart(p, id){
   if (ref) queueWrite(function(){ return ref.update({ charts: charts, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
 }
 
+// ---------- PATTERN PDF (stored as-is, viewable in the app) ----------
+function canStorePdf(){ return !!(assets || localFiles); }
+
+function storePdfBlob(blob, name){
+  var pdf = (blob.type === "application/pdf") ? blob : new Blob([blob], { type: "application/pdf" });
+  if (assets) return assets.upload(pdf).then(function(r){ return { pdfId: r.id, pdfName: name || "patron.pdf" }; });
+  if (localFiles) return localFiles.put(pdf).then(function(id){ return { pdfFileId: id, pdfName: name || "patron.pdf" }; });
+  return Promise.reject({ code: "unavailable", message: "stockage indisponible" });
+}
+
+function getProjectPdfBlob(p){
+  if (p.pdfFileId && localFiles) return localFiles.get(p.pdfFileId);
+  if (p.pdfId) return fetch("/_blob/" + p.pdfId).then(function(r){ return r.ok ? r.blob() : null; });
+  return Promise.resolve(null);
+}
+
+function blobToDataUrl(blob){
+  return new Promise(function(resolve, reject){
+    var fr = new FileReader();
+    fr.onload = function(){ resolve(fr.result); };
+    fr.onerror = function(){ reject(fr.error); };
+    fr.readAsDataURL(blob);
+  });
+}
+
+function attachPdfToProject(projectId, file){
+  if (!canStorePdf() || !db) return;
+  state.pdfBusy = projectId; if (state.activePanel === "pdf") render();
+  storePdfBlob(file, file.name).then(function(info){
+    return db.collection("projects").doc(projectId).update(Object.assign({}, info, { updatedAt: new Date().toISOString() })).then(function(){ return info; });
+  }).then(function(info){
+    state.pdfBusy = null;
+    if (state.currentDoc && state.currentDoc.id === projectId) Object.assign(state.currentDoc, info);
+    state.projects = state.projects.map(function(x){ return x.id === projectId ? Object.assign({}, x, info) : x; });
+    if (state.activePanel === "pdf") render();
+  }).catch(function(err){
+    console.error("pdf store failed", err);
+    state.pdfBusy = null;
+    state.error = "Impossible d'enregistrer le PDF" + ((err && err.code) ? " (" + err.code + ")" : "") + ". S'il est très lourd (plus de 20 Mo), il ne peut pas être gardé.";
+    render();
+  });
+}
+
+function pickPdfFile(onFile){
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/pdf,.pdf"; inp.style.display = "none";
+  inp.onchange = function(){ var f = inp.files && inp.files[0]; inp.remove(); if (f) onFile(f); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+// Pages are rendered once per PDF to JPEG images (light on memory, pinch-zoomable)
+// and the <img> nodes are kept so re-renders of the page don't redo the work.
+function loadPdfPages(p, key){
+  if (state.pdfCache){
+    (state.pdfCache.imgs || []).forEach(function(img){ try { URL.revokeObjectURL(img.src); } catch(e){} });
+    if (state.pdfCache.url) try { URL.revokeObjectURL(state.pdfCache.url); } catch(e){}
+  }
+  var cache = state.pdfCache = { key: key, imgs: [], loading: true, done: 0, total: 0, url: null, error: null };
+  function status(){
+    var st = document.getElementById("pdf-status");
+    if (st) st.textContent = cache.error ? cache.error : (cache.loading ? "Chargement des pages... " + cache.done + (cache.total ? " / " + cache.total : "") : "");
+  }
+  getProjectPdfBlob(p).then(function(blob){
+    if (!blob) throw new Error("PDF introuvable");
+    cache.url = URL.createObjectURL(blob);
+    var full = document.getElementById("pdf-open");
+    if (full){ full.href = cache.url; full.style.display = ""; }
+    return blob.arrayBuffer();
+  }).then(function(buf){
+    return loadPdfJs().then(function(){
+      try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_SRC; } catch(e){}
+      return window.pdfjsLib.getDocument({ data: buf }).promise;
+    });
+  }).then(function(pdf){
+    cache.total = pdf.numPages; status();
+    var width = Math.min(1600, Math.max(900, Math.round((window.innerWidth || 400) * (window.devicePixelRatio || 2))));
+    var nums = []; for (var n = 1; n <= pdf.numPages; n++) nums.push(n);
+    return nums.reduce(function(chain, n){
+      return chain.then(function(){
+        if (state.pdfCache !== cache) return;
+        return renderPageCanvas(pdf, n, width).then(function(cv){ return canvasToBlob(cv, 0.85); }).then(function(b){
+          if (state.pdfCache !== cache) return;
+          var img = el("img", { src: URL.createObjectURL(b), alt: "Page " + n, style: "width:100%;border-radius:6px;border:1px solid var(--line);background:#fff;" });
+          cache.imgs.push(img);
+          cache.done = n;
+          var holder = document.getElementById("pdf-pages");
+          if (holder) holder.appendChild(img);
+          status();
+        });
+      });
+    }, Promise.resolve());
+  }).then(function(){
+    cache.loading = false; status();
+  }).catch(function(err){
+    console.error("pdf view failed", err);
+    cache.loading = false;
+    cache.error = "Impossible d'afficher le PDF (" + ((err && (err.code || err.message)) || "erreur") + ").";
+    status();
+  });
+}
+
+function renderPdfPanel(p){
+  var key = p.id + ":" + (p.pdfId || p.pdfFileId || "");
+  var has = !!(p.pdfId || (p.pdfFileId && localFiles));
+  var box = el("div", {class:"step-card", style:"padding:16px 12px;gap:12px;"}, [
+    el("div", {class:"step-eyebrow", style:"padding:0 4px;"}, ["PDF du patron" + (p.pdfName ? " · " + p.pdfName : "")])
+  ]);
+  if (state.pdfBusy === p.id){
+    box.appendChild(el("div", {class:"step-busy"}, [spinner(), text("Enregistrement du PDF...")]));
+    return box;
+  }
+  if (!has){
+    box.appendChild(el("div", {class:"small-note", style:"padding:0 4px;"}, ["Aucun PDF n'est enregistré pour ce patron."]));
+    if (canStorePdf()) box.appendChild(el("button", {class:"btn btn-primary btn-sm", style:"align-self:flex-start;", onclick:function(){ pickPdfFile(function(f){ attachPdfToProject(p.id, f); }); }}, ["Joindre le PDF du patron"]));
+    return box;
+  }
+  var cache = state.pdfCache;
+  if (!cache || cache.key !== key) { loadPdfPages(p, key); cache = state.pdfCache; }
+  box.appendChild(el("div", {style:"display:flex;flex-wrap:wrap;gap:4px 16px;padding:0 4px;"}, [
+    el("a", {id:"pdf-open", class:"link-btn", href: cache.url || "#", target:"_blank", rel:"noopener", style: cache.url ? "text-decoration:none;" : "display:none;text-decoration:none;"}, ["Ouvrir en plein écran"]),
+    canStorePdf() ? el("button", {class:"link-btn", onclick:function(){ pickPdfFile(function(f){ attachPdfToProject(p.id, f); }); }}, ["Remplacer le PDF"]) : null
+  ]));
+  box.appendChild(el("div", {id:"pdf-status", class:"small-note", style:"padding:0 4px;"}, [cache.error || (cache.loading ? "Chargement des pages... " + cache.done + (cache.total ? " / " + cache.total : "") : "")]));
+  var pages = el("div", {id:"pdf-pages", style:"display:flex;flex-direction:column;gap:10px;"}, []);
+  cache.imgs.forEach(function(img){ pages.appendChild(img); });
+  box.appendChild(pages);
+  return box;
+}
+
 // ---------- EXPORT / IMPORT ----------
 // A project travels as one JSON file. Pictures (cover, chart photos) ride
 // inside it as JPEG data URLs so the standalone app gets them too.
@@ -2589,8 +2729,9 @@ function exportProject(p){
   });
   var coverJob = isImageDataUrl(p.coverData) ? Promise.resolve(p.coverData)
     : (p.coverImageId ? assetToDataUrl(p.coverImageId, 600) : Promise.resolve(null));
-  Promise.all([Promise.all(imgJobs), coverJob]).then(function(r){
-    var chartImgs = r[0], cover = r[1];
+  var pdfJob = getProjectPdfBlob(p).then(function(b){ return b ? blobToDataUrl(b) : null; }).catch(function(e){ console.error("pdf export failed", e); return null; });
+  Promise.all([Promise.all(imgJobs), coverJob, pdfJob]).then(function(r){
+    var chartImgs = r[0], cover = r[1], pdfData = r[2];
     charts.forEach(function(c, k){
       delete c.imageId; delete c._busy; delete c._error; delete c._notesBusy; delete c.imageData;
       if (chartImgs[k]) c.imageData = chartImgs[k];
@@ -2606,6 +2747,7 @@ function exportProject(p){
       charts: charts
     };
     if (cover) project.coverData = cover;
+    if (pdfData){ project.pdfData = pdfData; project.pdfName = p.pdfName || (slugify(p.title) + ".pdf"); }
     var payload = { format: "patron-tricot", version: 2, exportedAt: new Date().toISOString(), project: project };
     state.exportBusy = false; render();
     return downloads.save({ filename: slugify(p.title) + ".json", data: JSON.stringify(payload) });
@@ -2664,8 +2806,11 @@ function importProjectFromFile(file){
       return storeImportedImage(du).then(function(img){ return Object.assign(copy, img); });
     });
     var coverJob = storeImportedImage(pr.coverData);
-    Promise.all([Promise.all(chartJobs), coverJob]).then(function(r){
-      var charts = r[0], cover = r[1];
+    var pdfJob = (typeof pr.pdfData === "string" && pr.pdfData.indexOf("data:application/pdf;base64,") === 0)
+      ? storePdfBlob(dataUrlToBlob(pr.pdfData), String(pr.pdfName || "patron.pdf")).catch(function(e){ console.error("pdf import failed", e); return {}; })
+      : Promise.resolve({});
+    Promise.all([Promise.all(chartJobs), coverJob, pdfJob]).then(function(r){
+      var charts = r[0], cover = r[1], pdfInfo = r[2];
       var now = new Date().toISOString();
       var docData = {
         title: String(pr.title || "Patron importé"),
@@ -2681,6 +2826,7 @@ function importProjectFromFile(file){
       if (pr.reference && typeof pr.reference === "object") docData.reference = pr.reference;
       if (cover.imageId) docData.coverImageId = cover.imageId;
       if (cover.imageData) docData.coverData = cover.imageData;
+      Object.assign(docData, pdfInfo);
       return withTimeout(db.collection("projects").add(docData), 20000).then(function(ref){
         state.importMsg = null;
         openProject(ref.id, Object.assign({}, docData, { id: ref.id }));
@@ -2697,6 +2843,10 @@ function importProjectFromFile(file){
 // ---------- MANUAL EDITOR ----------
 function renderEditor(p){
   var box = el("div", {style:"display:flex;flex-direction:column;gap:12px;"}, []);
+  box.appendChild(el("div", {class:"section-edit"}, [
+    el("label", {class:"field-label"}, ["Nom du patron"]),
+    el("input", {type:"text", value: p.title || "", onchange:function(e){ renameProject(p, e.target.value); }})
+  ]));
   (p.sections||[]).forEach(function(sec, si){
     var secBox = el("div", {class:"section-edit"}, []);
     secBox.appendChild(el("div", {class:"section-edit-head"}, [
@@ -2731,6 +2881,16 @@ function renderEditor(p){
   });
   box.appendChild(el("button", {class:"btn btn-ghost btn-sm", onclick: addSection}, ["+ Ajouter une section"]));
   return box;
+}
+
+function renameProject(p, title){
+  title = String(title || "").trim();
+  if (!title || title === p.title) return;
+  p.title = title;
+  state.projects = state.projects.map(function(x){ return x.id === p.id ? Object.assign({}, x, { title: title }) : x; });
+  var ref = currentRef();
+  if (ref) queueWrite(function(){ return ref.update({ title: title, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
+  render();
 }
 
 function cloneSections(p){
@@ -2796,18 +2956,48 @@ function removeSection(si){
 
 // ---------- LOCAL STORAGE (replaces the claude.ai database) ----------
 // Same small API surface the app already uses: collection().get/add, doc().get/update/delete.
-function makeLocalDb(){
-  var dbPromise = null;
-  function open(){
-    if (dbPromise) return dbPromise;
-    dbPromise = new Promise(function(resolve, reject){
-      var req = indexedDB.open("patron-tricot", 1);
-      req.onupgradeneeded = function(){ req.result.createObjectStore("projects", { keyPath: "id" }); };
-      req.onsuccess = function(){ resolve(req.result); };
-      req.onerror = function(){ reject(req.error || new Error("IndexedDB indisponible")); };
+var localIdbPromise = null;
+function openLocalIdb(){
+  if (localIdbPromise) return localIdbPromise;
+  localIdbPromise = new Promise(function(resolve, reject){
+    var req = indexedDB.open("patron-tricot", 2);
+    req.onupgradeneeded = function(){
+      var d = req.result;
+      if (!d.objectStoreNames.contains("projects")) d.createObjectStore("projects", { keyPath: "id" });
+      if (!d.objectStoreNames.contains("files")) d.createObjectStore("files");
+    };
+    req.onsuccess = function(){ resolve(req.result); };
+    req.onerror = function(){ reject(req.error || new Error("IndexedDB indisponible")); };
+  });
+  return localIdbPromise;
+}
+
+// Big files (the pattern PDF) live in their own store so that every counter
+// tap doesn't rewrite megabytes along with the project.
+function makeLocalFiles(){
+  function run(mode, fn){
+    return openLocalIdb().then(function(d){
+      return new Promise(function(resolve, reject){
+        var t = d.transaction("files", mode);
+        var req = fn(t.objectStore("files"));
+        t.oncomplete = function(){ resolve(req && req.result); };
+        t.onerror = function(){ reject(t.error); };
+        t.onabort = function(){ reject(t.error); };
+      });
     });
-    return dbPromise;
   }
+  return {
+    put: function(blob){
+      var id = "f_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      return run("readwrite", function(s){ return s.put(blob, id); }).then(function(){ return id; });
+    },
+    get: function(id){ return run("readonly", function(s){ return s.get(id); }).then(function(b){ return b || null; }); },
+    delete: function(id){ return run("readwrite", function(s){ return s.delete(id); }).then(function(){}); }
+  };
+}
+
+function makeLocalDb(){
+  function open(){ return openLocalIdb(); }
   function tx(mode, fn){
     return open().then(function(d){
       return new Promise(function(resolve, reject){
@@ -2908,6 +3098,7 @@ window.addEventListener("unhandledrejection", function(e){
 function init(){
   db = makeLocalDb();
   LOCAL_MODE = true;
+  localFiles = makeLocalFiles();
   sample = null;   // no AI import outside claude.ai
   assets = null;   // pictures are kept inside each project instead
   downloads = makeDownloads();
