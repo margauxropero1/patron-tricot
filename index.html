@@ -1,0 +1,2472 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Patron Tricot</title>
+<meta name="theme-color" content="#EDEAE0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Patron Tricot">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#232520;
+  --ink-soft:#6b6c62;
+  --paper:#EDEAE0;
+  --surface:#FFFFFF;
+  --surface-2:#F5F2EA;
+  --line:#DAD6C8;
+  --accent:#2F6F6E;
+  --accent-ink:#0F3433;
+  --accent-soft:#DCEBE9;
+  --highlight:#C98A20;
+  --highlight-soft:#F5E4C4;
+  --danger:#B54B3F;
+  --danger-soft:#F3DFDA;
+  --radius:16px;
+  --radius-sm:10px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#EDEAE0;
+    --ink-soft:#A9A79A;
+    --paper:#191B16;
+    --surface:#232620;
+    --surface-2:#2A2D26;
+    --line:#3B3D34;
+    --accent:#5FB6B0;
+    --accent-ink:#DFF4F1;
+    --accent-soft:#213734;
+    --highlight:#E3B24E;
+    --highlight-soft:#3A2F17;
+    --danger:#E2897A;
+    --danger-soft:#3D2621;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#EDEAE0;
+  --ink-soft:#A9A79A;
+  --paper:#191B16;
+  --surface:#232620;
+  --surface-2:#2A2D26;
+  --line:#3B3D34;
+  --accent:#5FB6B0;
+  --accent-ink:#DFF4F1;
+  --accent-soft:#213734;
+  --highlight:#E3B24E;
+  --highlight-soft:#3A2F17;
+  --danger:#E2897A;
+  --danger-soft:#3D2621;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:'Karla',sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{
+  font-family:'Fraunces',serif;
+  text-wrap:balance;
+}
+button{font-family:inherit;}
+.app{
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+  max-width:640px;
+  margin:0 auto;
+}
+.topbar{
+  position:sticky;
+  top:env(safe-area-inset-top,0px);
+  z-index:10;
+  background:var(--paper);
+  padding:14px 16px 12px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid var(--line);
+}
+.topbar .back{
+  background:none;border:none;color:var(--ink);
+  font-size:22px;line-height:1;padding:4px 6px;cursor:pointer;
+  border-radius:8px;
+}
+.topbar .back:hover{background:var(--surface-2);}
+.topbar .title{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:19px;
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.topbar .tag{
+  font-size:11px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  background:var(--accent-soft);
+  color:var(--accent-ink);
+  padding:4px 9px;
+  border-radius:999px;
+  font-weight:600;
+  white-space:nowrap;
+}
+main{
+  flex:1;
+  padding:16px 16px 24px;
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.empty{
+  margin-top:14vh;
+  text-align:center;
+  color:var(--ink-soft);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+}
+.empty .display{font-size:22px;color:var(--ink);}
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:14px 16px;
+}
+.project-list{display:flex;flex-direction:column;gap:10px;}
+.project-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:12px;
+  cursor:pointer;
+  display:flex;
+  gap:14px;
+  align-items:stretch;
+  transition:border-color .15s;
+}
+.pc-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px;}
+.pc-thumb{width:72px;height:94px;flex:none;border-radius:10px;object-fit:cover;background:var(--surface-2);border:1px solid var(--line);}
+.pc-thumb-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink-soft);font-size:11.5px;font-weight:600;cursor:pointer;padding:0;font-family:inherit;}
+.pc-thumb-empty .glyph{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--accent);}
+.pc-thumb-empty:hover{border-color:var(--accent);}
+.project-card:hover{border-color:var(--accent);}
+.project-card .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.project-card .name{font-family:'Fraunces',serif;font-weight:600;font-size:17px;}
+.project-card .size-pill{
+  font-size:11.5px;color:var(--ink-soft);
+  background:var(--surface-2);
+  padding:3px 9px;border-radius:999px;
+  white-space:nowrap;
+}
+.bar-track{
+  height:6px;border-radius:999px;background:var(--surface-2);overflow:hidden;
+}
+.bar-fill{height:100%;background:var(--accent);border-radius:999px;transition:width .25s;}
+.project-card .meta{font-size:12.5px;color:var(--ink-soft);}
+
+.btn{
+  appearance:none;border:none;cursor:pointer;
+  font-family:'Karla',sans-serif;font-weight:600;font-size:14.5px;
+  padding:12px 18px;border-radius:999px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-primary{background:var(--accent);color:var(--surface);}
+.btn-primary:disabled{opacity:.5;cursor:default;}
+.btn-ghost{background:var(--surface-2);color:var(--ink);}
+.btn-outline{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.btn-danger{background:var(--danger-soft);color:var(--danger);}
+.btn-sm{padding:8px 13px;font-size:13px;}
+.fab{
+  position:fixed;
+  left:0;right:0;
+  bottom:0;
+  display:flex;
+  justify-content:center;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));
+  pointer-events:none;
+}
+.fab .btn{pointer-events:auto;box-shadow:0 6px 20px rgba(0,0,0,.18);}
+.fab-spacer{height:78px;}
+
+label.field-label{
+  font-size:12.5px;font-weight:600;color:var(--ink-soft);
+  text-transform:uppercase;letter-spacing:.04em;
+  display:block;margin-bottom:6px;
+}
+input[type=text], textarea, select{
+  width:100%;
+  font-family:'Karla',sans-serif;
+  font-size:15px;
+  color:var(--ink);
+  background:var(--surface-2);
+  border:1px solid var(--line);
+  border-radius:var(--radius-sm);
+  padding:10px 12px;
+  resize:vertical;
+}
+input[type=text]:focus, textarea:focus, select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.dropzone{
+  border:1.5px dashed var(--line);
+  border-radius:var(--radius);
+  padding:28px 18px;
+  text-align:center;
+  color:var(--ink-soft);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  cursor:pointer;
+  background:var(--surface);
+}
+.dropzone:hover{border-color:var(--accent);}
+.spinner{
+  width:20px;height:20px;border-radius:50%;
+  border:2.5px solid var(--line);
+  border-top-color:var(--accent);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.step-busy{display:flex;align-items:center;gap:10px;color:var(--ink-soft);font-size:14px;padding:18px 4px;}
+.error-banner{
+  background:var(--danger-soft);color:var(--danger);
+  border-radius:var(--radius-sm);
+  padding:11px 13px;font-size:13.5px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  line-height:1.4;
+}
+.error-banner button{background:none;border:none;color:inherit;font-weight:700;cursor:pointer;font-size:14px;padding:0 2px;}
+.sizes-grid{display:flex;flex-wrap:wrap;gap:8px;}
+.size-chip{
+  padding:9px 15px;border-radius:999px;border:1.5px solid var(--line);
+  background:var(--surface);color:var(--ink);cursor:pointer;font-weight:600;font-size:14px;
+}
+.size-chip.active{background:var(--accent);border-color:var(--accent);color:var(--surface);}
+
+.section-nav{
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;
+  scrollbar-width:none;
+}
+.section-nav::-webkit-scrollbar{display:none;}
+.section-chip{
+  flex:none;padding:7px 13px;border-radius:999px;
+  background:var(--surface-2);color:var(--ink-soft);
+  font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;border:1px solid transparent;
+}
+.section-chip.active{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent);}
+
+.progress-row{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-soft);}
+.progress-row .bar-track{flex:1;}
+
+.step-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:22px 20px;
+  display:flex;flex-direction:column;gap:16px;
+  min-height:140px;
+}
+.step-eyebrow{font-size:12px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+.step-text{
+  font-family:'Fraunces',serif;
+  font-size:21px;
+  line-height:1.45;
+  font-weight:500;
+  white-space:pre-wrap;
+}
+.repeat-box{
+  background:var(--highlight-soft);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.repeat-box .label{font-size:13px;font-weight:700;color:var(--ink);}
+.repeat-controls{display:flex;align-items:center;gap:14px;}
+.repeat-controls .count{
+  font-family:'Fraunces',serif;font-size:26px;font-weight:600;min-width:64px;text-align:center;
+  font-variant-numeric:tabular-nums;
+}
+.round-btn{
+  width:42px;height:42px;border-radius:50%;border:none;
+  background:var(--highlight);color:#2b2109;
+  font-size:20px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex:none;
+}
+.round-btn:disabled{opacity:.4;cursor:default;}
+.repeat-done-tag{
+  font-size:12px;font-weight:700;color:var(--accent-ink);
+  background:var(--accent-soft);padding:3px 9px;border-radius:999px;align-self:flex-start;
+}
+.bottom-nav{
+  position:sticky;bottom:0;
+  background:var(--paper);
+  border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+  display:flex;align-items:center;gap:10px;
+}
+.bottom-nav .step-pos{flex:1;text-align:center;font-size:13px;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+.nav-btn{
+  width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink);font-size:19px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex:none;
+}
+.nav-btn:disabled{opacity:.35;cursor:default;}
+.nav-btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface);}
+
+.section-edit{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 14px;display:flex;flex-direction:column;gap:10px;
+}
+.section-edit-head{display:flex;gap:8px;align-items:center;}
+.step-edit-row{
+  background:var(--surface-2);border-radius:var(--radius-sm);padding:10px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.step-edit-row .row2{display:flex;gap:8px;align-items:center;}
+.step-edit-row input[type=number]{
+  width:78px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;
+}
+.icon-btn{
+  background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:16px;
+  padding:4px 6px;border-radius:6px;
+}
+.icon-btn:hover{background:var(--surface);color:var(--danger);}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;}
+.link-btn{background:none;border:none;color:var(--accent);font-weight:700;font-size:13.5px;cursor:pointer;padding:6px 0;}
+hr.sep{border:none;border-top:1px solid var(--line);margin:2px 0;}
+.confirm-inline{display:flex;gap:8px;align-items:center;}
+.small-note{font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+.chart-scroll{overflow-x:auto;overflow-y:auto;max-height:56vh;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2);padding:6px 0;}
+.chart-row{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;cursor:pointer;width:100%;box-sizing:border-box;}
+.chart-row.current{background:var(--accent-soft);}
+.chart-row.done{opacity:.4;}
+.chart-rownum{width:26px;flex:none;font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--ink-soft);text-align:right;}
+.chart-cells{display:flex;gap:1px;}
+.chart-note-dot{width:6px;height:6px;border-radius:50%;background:var(--highlight);flex:none;margin-left:2px;}
+.chart-cell{width:16px;height:16px;flex:none;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;}
+.chart-cell-p::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--ink);}
+.chart-cell-x{background:var(--highlight);}
+.chart-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--ink-soft);}
+.chart-tag{font-size:10px;font-weight:700;color:var(--accent-ink);background:var(--accent-soft);border-radius:999px;padding:1px 6px;white-space:nowrap;flex:none;}
+.chart-colnum{width:16px;flex:none;font-size:9px;text-align:center;color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+.chart-foot{cursor:default;padding-top:4px;}
+.row-note{background:var(--surface);border-left:3px solid var(--highlight);padding:8px 10px;border-radius:6px;font-size:13.5px;line-height:1.45;}
+.reading-box{background:var(--surface-2);border-radius:var(--radius-sm);padding:4px 12px 10px;}
+.repeat-box textarea{background:var(--surface);font-size:14px;}
+.repeat-box input[type=number]{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px;font-size:14px;}
+.chart-legend .sw{display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line);}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+(function(){
+"use strict";
+
+var db = null, sample = null, assets = null, downloads = null, capsReady = false;
+var LOCAL_MODE = false; // true in the standalone (non-claude.ai) build
+var state = {
+  view: "home",
+  projects: [],
+  projectsLoaded: false,
+  currentId: null,
+  currentDoc: null,
+  editMode: false,
+  busy: false,
+  error: null,
+  wizard: null,
+  confirmDelete: null
+};
+var writeChain = Promise.resolve();
+
+function el(tag, attrs, children){
+  var e = document.createElement(tag);
+  attrs = attrs || {};
+  for (var k in attrs){
+    if (k === "class") e.className = attrs[k];
+    else if (k === "html") e.innerHTML = attrs[k];
+    else if (k.indexOf("on") === 0 && typeof attrs[k] === "function") e.addEventListener(k.slice(2), attrs[k]);
+    else if (k === "disabled" || k === "checked" || k === "readonly" || k === "selected") e[k] = !!attrs[k];
+    else if (attrs[k] !== null && attrs[k] !== undefined) e.setAttribute(k, attrs[k]);
+  }
+  (children || []).forEach(function(c){
+    if (c === null || c === undefined) return;
+    if (typeof c === "string") e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  });
+  return e;
+}
+function text(t){ return document.createTextNode(t); }
+
+function render(){
+  var app = document.getElementById("app");
+  app.innerHTML = "";
+  if (state.view === "home") app.appendChild(renderHome());
+  else if (state.view === "new") app.appendChild(renderWizard());
+  else if (state.view === "project") app.appendChild(renderProject());
+}
+
+// ---------- HOME ----------
+function renderHome(){
+  var wrap = el("div", {}, []);
+  wrap.appendChild(el("div", {class:"topbar"}, [
+    el("div", {class:"title"}, ["Patron Tricot"]),
+    el("button", {class:"back", onclick:function(){ subscribeProjects(); }, title:"Rafraîchir"}, ["↻"])
+  ]));
+  var main = el("main", {}, []);
+  if (!state.projectsLoaded){
+    main.appendChild(el("div", {class:"step-busy"}, [spinner(), text("Chargement de tes projets...")]));
+  } else if (state.projectsStalled){
+    main.appendChild(el("div", {class:"error-banner"}, [
+      el("div", {}, [
+        "Impossible de charger tes projets sauvegardés pour l'instant. Tu peux quand même en créer un nouveau.",
+        state.projectsErrorDetail ? el("div", {class:"small-note", style:"margin-top:6px;opacity:.8;"}, ["Détail technique : " + state.projectsErrorDetail]) : null
+      ]),
+      el("button", {onclick:function(){ subscribeProjects(); }}, ["↻"])
+    ]));
+  } else if (state.projects.length === 0){
+    main.appendChild(el("div", {class:"empty"}, [
+      el("div", {class:"display"}, ["Aucun patron en cours"]),
+      el("div", {}, ["Crée un patron, ou importe un fichier .json exporté depuis ta version claude.ai."])
+    ]));
+  } else {
+    var list = el("div", {class:"project-list"}, []);
+    state.projects.forEach(function(p){
+      list.appendChild(renderProjectCard(p));
+    });
+    main.appendChild(list);
+  }
+  if (db){
+    main.appendChild(el("button", {class:"link-btn", style:"align-self:center;", onclick:function(){ pickJsonFile(importProjectFromFile); }}, ["Importer un projet (fichier .json)"]));
+  }
+  if (state.importMsg){
+    main.appendChild(el("div", {class: state.importMsg.ok ? "small-note" : "error-banner", style:"text-align:center;"}, [state.importMsg.text]));
+  }
+  main.appendChild(el("div", {class:"fab-spacer"}));
+  wrap.appendChild(main);
+  wrap.appendChild(el("div", {class:"fab"}, [
+    el("button", {class:"btn btn-primary", onclick:function(){ startWizard(); }}, ["+ Nouveau patron"])
+  ]));
+  return wrap;
+}
+
+function renderProjectCard(p){
+  var flat = flattenSections(p.sections || []);
+  var idx = (p.progress && p.progress.flatIndex) || 0;
+  var pct = flat.length ? Math.round((Math.min(idx, flat.length-1) / Math.max(flat.length-1,1)) * 100) : 0;
+  var sizeLabel = (p.sizes && p.sizes[p.sizeIndex]) || "";
+  var confirming = state.confirmDelete === p.id;
+  var thumb = (p.coverImageId || p.coverData)
+    ? el("img", {class:"pc-thumb", src: p.coverData || ("/_blob/" + p.coverImageId), alt:"Photo du patron " + (p.title || "")})
+    : el("button", {class:"pc-thumb pc-thumb-empty", title:"Ajouter une photo", onclick:function(e){ e.stopPropagation(); if (assets || LOCAL_MODE) pickImage(function(f){ setProjectCover(p.id, f); }); }}, [
+        el("span", {class:"glyph"}, [((p.title || "?").trim()[0] || "?").toUpperCase()]),
+        (assets || LOCAL_MODE) ? el("span", {}, [state.coverBusy === p.id ? "Envoi..." : "+ Photo"]) : null
+      ]);
+  return el("div", {class:"project-card", onclick: confirming ? null : function(){ openProject(p.id); }}, [thumb, el("div", {class:"pc-body"}, [
+    el("div", {class:"row"}, [
+      el("div", {class:"name"}, [p.title || "Patron sans nom"]),
+      el("div", {style:"display:flex;align-items:center;gap:8px;"}, [
+        sizeLabel ? el("div", {class:"size-pill"}, [sizeLabel]) : null,
+        confirming
+          ? el("div", {class:"confirm-inline", onclick:function(e){ e.stopPropagation(); }}, [
+              el("span", {class:"small-note"}, ["Supprimer ?"]),
+              el("button", {class:"btn btn-sm btn-danger", onclick:function(){ deleteProject(p.id); }}, ["Oui"]),
+              el("button", {class:"btn btn-sm btn-ghost", onclick:function(){ state.confirmDelete = null; render(); }}, ["Non"])
+            ])
+          : el("button", {class:"icon-btn", title:"Supprimer", onclick:function(e){ e.stopPropagation(); state.confirmDelete = p.id; render(); }}, ["✕"])
+      ])
+    ]),
+    el("div", {class:"bar-track"}, [ el("div", {class:"bar-fill", style:"width:"+pct+"%"}) ]),
+    el("div", {class:"meta"}, [ "Étape " + Math.min(idx+1, flat.length) + " / " + flat.length ])
+  ])]);
+}
+
+function pickImage(onFile){
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*"; inp.style.display = "none";
+  inp.onchange = function(){ var f = inp.files && inp.files[0]; inp.remove(); if (f) onFile(f); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+function setProjectCover(projectId, blob){
+  if (!db) return;
+  if (!assets){
+    if (!LOCAL_MODE) return;
+    state.coverBusy = projectId; render();
+    fileToDataUrl(blob, 600).then(function(du){
+      return db.collection("projects").doc(projectId).update({ coverData: du }).then(function(){ return du; });
+    }).then(function(du){
+      state.coverBusy = null;
+      state.projects = state.projects.map(function(x){ return x.id === projectId ? Object.assign({}, x, { coverData: du }) : x; });
+      if (state.currentDoc && state.currentDoc.id === projectId) state.currentDoc.coverData = du;
+      render();
+    }).catch(function(err){
+      console.error(err);
+      state.coverBusy = null;
+      state.error = "Impossible d'enregistrer la photo, réessaie.";
+      render();
+    });
+    return;
+  }
+  state.coverBusy = projectId; render();
+  assets.upload(blob).then(function(res){
+    return db.collection("projects").doc(projectId).update({ coverImageId: res.id }).then(function(){ return res.id; });
+  }).then(function(id){
+    state.coverBusy = null;
+    // snapshot objects are frozen: swap in copies rather than mutating
+    state.projects = state.projects.map(function(x){ return x.id === projectId ? Object.assign({}, x, { coverImageId: id }) : x; });
+    if (state.currentDoc && state.currentDoc.id === projectId) state.currentDoc.coverImageId = id;
+    render();
+  }).catch(function(err){
+    console.error(err);
+    state.coverBusy = null;
+    state.error = "Impossible d'enregistrer la photo, réessaie.";
+    render();
+  });
+}
+
+function spinner(){ return el("div", {class:"spinner"}); }
+
+// ---------- DATA HELPERS ----------
+function flattenSections(sections){
+  var out = [];
+  (sections || []).forEach(function(sec, si){
+    (sec.steps || []).forEach(function(st, sti){
+      out.push({ sectionIndex: si, stepIndex: sti, sectionName: sec.name, text: st.text, repeatCount: st.repeatCount, rowsPerRepeat: st.rowsPerRepeat });
+    });
+  });
+  return out;
+}
+
+function queueWrite(fn){
+  writeChain = writeChain.then(fn).catch(function(e){ console.error(e); });
+  return writeChain;
+}
+
+// ---------- HOME DB SUBSCRIPTION ----------
+function subscribeProjects(silent){
+  if (!db) { state.projectsLoaded = true; render(); return; }
+  if (!silent){
+    state.projectsLoaded = false;
+    state.projectsStalled = false;
+    render();
+  }
+  withTimeout(db.collection("projects").get(), 12000).then(function(snap){
+    state.projects = snap.docs.map(function(d){ return Object.assign({}, d.data() || {}, { id: d.id }); });
+    state.projects.sort(function(a, b){ return (b.updatedAt || "").localeCompare(a.updatedAt || ""); });
+    if (silent && state.view !== "home") return;
+    state.projectsLoaded = true;
+    state.projectsStalled = false;
+    render();
+  }).catch(function(err){
+    console.error(err);
+    if (silent) return;
+    state.projectsLoaded = true;
+    state.projectsStalled = true;
+    state.projectsErrorDetail = (err && (err.code || err.message)) ? ((err.code || "") + (err.message ? " — " + err.message : "")) : String(err);
+    render();
+  });
+}
+
+function openProject(id, seedData){
+  state.currentId = id;
+  state.currentDoc = seedData || null;
+  state.activePanel = state.openEditorNext ? "edit" : null;
+  state.openEditorNext = false;
+  state.chartDraft = null;
+  state.view = "project";
+  state.projectLoadError = null;
+  render();
+  if (!db || seedData) return; // seedData already has everything we need, no round trip required
+  withTimeout(db.collection("projects").doc(id).get(), 12000).then(function(snap){
+    if (state.currentId !== id) return; // navigated away while loading
+    if (!snap.exists){ state.view = "home"; render(); return; }
+    state.currentDoc = Object.assign({}, snap.data() || {}, { id: snap.id });
+    render();
+  }).catch(function(err){
+    console.error(err);
+    if (state.currentId !== id) return;
+    var detail = (err && (err.code || err.message)) ? ((err.code || "") + (err.message ? " — " + err.message : "")) : String(err);
+    state.projectLoadError = "Impossible de charger ce projet pour l'instant. Détail : " + detail;
+    render();
+  });
+}
+
+function goHome(skipRefresh){
+  state.currentId = null;
+  state.currentDoc = null;
+  state.view = "home";
+  render();
+  if (!skipRefresh && db && state.projectsLoaded) subscribeProjects(true); // pick up projects created or changed meanwhile
+}
+
+// ---------- WIZARD (new project) ----------
+function startWizard(){
+  state.wizard = { stage: (sample ? "upload" : "manual"), rawText: "", title: "", sizes: [], sizeIndex: 0, busy: false, error: null, pasteMode: false };
+  state.view = "new";
+  render();
+}
+
+function renderWizard(){
+  var w = state.wizard;
+  var wrap = el("div", {}, []);
+  wrap.appendChild(el("div", {class:"topbar"}, [
+    el("button", {class:"back", onclick:function(){ goHome(); }}, ["‹"]),
+    el("div", {class:"title"}, ["Nouveau patron"])
+  ]));
+  var main = el("main", {}, []);
+
+  if (w.error){
+    main.appendChild(el("div", {class:"error-banner"}, [
+      el("div", {}, [w.error]),
+      el("button", {onclick:function(){ w.error = null; render(); }}, ["✕"])
+    ]));
+    if (w.retrySections){
+      main.appendChild(el("button", {class:"btn btn-primary btn-sm", onclick:function(){
+        var sec = w.retrySections; w.error = null; w.retrySections = null;
+        finishProjectCreation(w, sec);
+      }}, ["Réessayer l'enregistrement"]));
+    }
+  }
+
+  if (w.stage === "manual"){
+    main.appendChild(el("div", {class:"card"}, [
+      el("label", {class:"field-label"}, ["Nom du patron"]),
+      el("input", {type:"text", id:"manual-title", placeholder:"Ex : Pull marin", value: w.title || "", oninput:function(e){ w.title = e.target.value; }})
+    ]));
+    main.appendChild(el("div", {class:"small-note"}, ["Tu ajouteras ensuite tes étapes à la main (bouton « Modifier le patron »). Pour un patron déjà structuré, utilise plutôt « Importer un projet » sur l'écran d'accueil."]));
+    main.appendChild(el("button", {class:"btn btn-primary", onclick:function(){
+      w.title = (w.title || "").trim() || "Mon patron";
+      state.openEditorNext = true;
+      finishProjectCreation(w, [{ name: "Patron", steps: [{ text: "Nouvelle étape", repeatCount: null, rowsPerRepeat: null }] }]);
+    }}, ["Créer le patron"]));
+  }
+
+  if (w.stage === "upload"){
+    if (!w.pasteMode){
+      main.appendChild(el("div", {class:"dropzone", onclick:function(){ document.getElementById("pdf-input").click(); }}, [
+        el("div", {style:"font-size:28px;"}, ["📄"]),
+        el("div", {}, [w.busy ? "Lecture du PDF..." : "Toucher pour choisir un PDF de patron"]),
+        el("div", {class:"small-note"}, ["On lit le texte du PDF directement dans ton navigateur, rien n'est envoyé ailleurs qu'à Claude pour la structuration."])
+      ]));
+      var input = el("input", {type:"file", accept:"application/pdf,.pdf", id:"pdf-input", style:"display:none;", onchange:handlePdfFile});
+      main.appendChild(input);
+      if (w.busy) main.appendChild(el("div", {class:"step-busy"}, [spinner(), text("Extraction du texte...")]));
+      main.appendChild(el("button", {class:"link-btn", onclick:function(){ w.pasteMode = true; render(); }}, ["Le PDF ne s'importe pas ? Coller le texte à la place"]));
+    } else {
+      main.appendChild(el("label", {class:"field-label"}, ["Colle le texte du patron ici"]));
+      var ta = el("textarea", {rows:"10", id:"paste-area", placeholder:"Colle ici le texte copié depuis ton PDF de patron..."});
+      main.appendChild(ta);
+      main.appendChild(el("button", {class:"btn btn-primary", onclick:function(){
+        var v = document.getElementById("paste-area").value.trim();
+        if (!v){ w.error = "Colle d'abord le texte du patron."; render(); return; }
+        w.rawText = v.slice(0, 30000);
+        runTitleSizesExtraction();
+      }}, ["Analyser ce texte"]));
+      main.appendChild(el("button", {class:"link-btn", onclick:function(){ w.pasteMode = false; render(); }}, ["← Revenir à l'import PDF"]));
+    }
+  }
+
+  if (w.stage === "detect"){
+    main.appendChild(el("div", {class:"step-busy"}, [spinner(), text("Claude repère le titre et les tailles du patron...")]));
+  }
+
+  if (w.stage === "pick-size"){
+    main.appendChild(el("div", {class:"card"}, [
+      el("label", {class:"field-label"}, ["Titre du patron"]),
+      el("input", {type:"text", id:"title-input", value: w.title || "", oninput:function(e){ w.title = e.target.value; }})
+    ]));
+    main.appendChild(el("div", {}, [
+      el("label", {class:"field-label"}, ["Choisis ta taille"]),
+      el("div", {class:"sizes-grid"}, (w.sizes.length ? w.sizes : ["Taille unique"]).map(function(s, i){
+        return el("button", {class:"size-chip" + (w.sizeIndex===i?" active":""), onclick:function(){ w.sizeIndex = i; render(); }}, [s]);
+      }))
+    ]));
+    main.appendChild(el("button", {class:"btn btn-primary", disabled: w.busy, onclick: runFullExtraction}, [w.busy ? "Génération en cours..." : "Générer mes étapes"]));
+    if (w.busy){
+      main.appendChild(el("div", {class:"step-busy"}, [spinner(), text(w.progressNote || "Claude lit le patron... (peut prendre 30 à 90s pour un patron long)")]));
+      main.appendChild(el("button", {class:"link-btn", onclick:function(){ var got = w.partialSections || []; w.busy=false; finishProjectCreation(w, got); }}, ["Ça prend trop longtemps — garder ce qui est déjà généré (" + (w.sectionsDone||0) + "/" + (w.totalSections||0) + " sections) et arrêter"]));
+    }
+  }
+
+  wrap.appendChild(main);
+  return wrap;
+}
+
+function handlePdfFile(e){
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  var w = state.wizard;
+  w.busy = true; w.error = null; render();
+  var reader = new FileReader();
+  reader.onload = function(){
+    extractPdfText(reader.result).then(function(txt){
+      w.busy = false;
+      if (!txt || txt.trim().length < 30){
+        w.error = "Impossible de lire du texte dans ce PDF (peut-être scanné en image). Essaie de coller le texte à la main.";
+        w.pasteMode = true;
+        render();
+        return;
+      }
+      w.rawText = txt.slice(0, 30000);
+      w.pdfDoc = lastPdfDoc;
+      if (lastPdfCover && assets){
+        w.coverPromise = assets.upload(lastPdfCover).then(function(r){ return r.id; }).catch(function(e){ console.error("cover upload failed", e); return null; });
+      }
+      runTitleSizesExtraction();
+    }).catch(function(err){
+      console.error(err);
+      w.busy = false;
+      w.error = "La lecture du PDF a échoué dans ce navigateur. Essaie de coller le texte du patron à la place.";
+      w.pasteMode = true;
+      render();
+    });
+  };
+  reader.onerror = function(){
+    w.busy = false;
+    w.error = "Impossible de lire ce fichier.";
+    render();
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+var pdfJsLoadPromise = null;
+function loadPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve();
+  if (pdfJsLoadPromise) return pdfJsLoadPromise;
+  pdfJsLoadPromise = new Promise(function(resolve, reject){
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+    s.onload = function(){ resolve(); };
+    s.onerror = function(){ pdfJsLoadPromise = null; reject(new Error("pdfjs failed to load")); };
+    document.head.appendChild(s);
+  });
+  return pdfJsLoadPromise;
+}
+
+function extractPdfText(arrayBuffer){
+  return loadPdfJs().then(function(){
+  if (!window.pdfjsLib){
+    return Promise.reject(new Error("pdfjs not loaded"));
+  }
+  try{
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  }catch(e){}
+  lastPdfCover = null;
+  lastPdfDoc = null;
+  return window.pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(function(pdf){
+    lastPdfDoc = pdf;
+    return extractAllText(pdf).then(function(txt){
+      return renderCover(pdf).then(function(blob){ lastPdfCover = blob; return txt; }, function(){ return txt; });
+    });
+  });
+  });
+}
+
+var lastPdfCover = null;
+var lastPdfDoc = null;
+function renderCover(pdf){
+  return pdf.getPage(1).then(function(page){
+    var base = page.getViewport({ scale: 1 });
+    var vp = page.getViewport({ scale: 480 / base.width });
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+    return page.render({ canvasContext: canvas.getContext("2d"), viewport: vp }).promise.then(function(){
+      return new Promise(function(resolve){ canvas.toBlob(function(b){ resolve(b); }, "image/jpeg", 0.82); });
+    });
+  });
+}
+
+function extractAllText(pdf){
+  {
+    var pages = [];
+    for (var i = 1; i <= pdf.numPages; i++) pages.push(i);
+    return pages.reduce(function(chain, pageNum){
+      return chain.then(function(acc){
+        return pdf.getPage(pageNum).then(function(page){
+          return page.getTextContent().then(function(content){
+            var strs = content.items.map(function(it){ return it.str; });
+            return acc + "\n" + strs.join(" ");
+          });
+        });
+      });
+    }, Promise.resolve(""));
+  }
+}
+
+function runTitleSizesExtraction(){
+  var w = state.wizard;
+  w.stage = "detect";
+  w.busy = true;
+  render();
+  if (!sample){
+    w.error = "La structuration par IA n'est pas disponible dans cette vue.";
+    w.stage = "upload";
+    w.busy = false;
+    render();
+    return;
+  }
+  var prompt = "Voici le texte brut extrait d'un patron de tricot (peut contenir du bruit de mise en page, en-têtes/pieds de page répétés). "
+    + "Identifie : 1) le titre du patron (court), 2) la liste ordonnée des tailles proposées, exactement comme indiquées dans le patron "
+    + "(ex: XXS, XS, S, M, L...), dans l'ordre où elles apparraissent dans les séquences de nombres entre parenthèses du type \"18 (20) 22 (24)\". "
+    + "Réponds uniquement avec un objet JSON de cette forme exacte : {\"title\": string, \"sizes\": string[]}. "
+    + "Si le patron n'a qu'une seule taille, sizes doit être [\"Taille unique\"].\n\n--- TEXTE DU PATRON ---\n" + w.rawText;
+  sample.json(prompt, { modelTier: "quick" }).then(function(data){
+    w.busy = false;
+    w.title = (data && data.title) || "Mon patron";
+    w.sizes = (data && Array.isArray(data.sizes) && data.sizes.length) ? data.sizes : ["Taille unique"];
+    w.sizeIndex = 0;
+    w.stage = "pick-size";
+    render();
+  }).catch(function(err){
+    console.error(err);
+    w.busy = false;
+    w.title = "Mon patron";
+    w.sizes = ["Taille unique"];
+    w.stage = "pick-size";
+    w.error = sampleErrorMessage(err) + " Tu peux quand même choisir un nom et une taille, puis compléter les étapes à la main.";
+    render();
+  });
+}
+
+// Generation is split section-by-section: one quick call to list section
+// names, then one (smaller, faster) call per section. This keeps each
+// request short so progress is visible and no single call has to produce
+// the whole pattern's worth of steps at once.
+function extractSectionsPipeline(w, onDone){
+  var doRender = w.renderFn || render;
+  w.busy = true; w.error = null; w.partialSections = []; w.sectionsDone = 0; w.totalSections = 0;
+  w.progressNote = "Repérage des sections du patron...";
+  doRender();
+  var chosenSize = w.sizes[w.sizeIndex] || "Taille unique";
+  var posInfo = w.sizes.length > 1 ? ("C'est la taille en position " + (w.sizeIndex+1) + " sur " + w.sizes.length + " dans chaque séquence entre parenthèses.") : "";
+  if (!sample){ w.busy = false; onDone([]); return; }
+
+  var namesPrompt = "Liste uniquement les noms des sections/parties principales de ce patron de tricot, dans l'ordre où elles apparaissent, "
+    + "sous forme d'un tableau JSON de chaînes courtes (ex: [\"Dos\",\"Manches\",\"Col\"]). Réponds uniquement avec ce tableau JSON, rien d'autre.\n\n"
+    + "--- TEXTE DU PATRON ---\n" + w.rawText;
+
+  function runQueue(queue){
+    if (!w.busy) return; // bailed out via the skip link
+    if (!queue.length){ w.busy = false; onDone(w.partialSections); return; }
+    var name = queue[0];
+    w.progressNote = "Section " + (w.sectionsDone + 1) + " / " + w.totalSections + " : " + name;
+    doRender();
+    var prompt = "Voici le texte brut complet d'un patron de tricot (il contient toutes ses sections). La tricoteuse fait la taille \"" + chosenSize + "\". " + posInfo + " "
+      + "Concentre-toi UNIQUEMENT sur la section intitulée \"" + name + "\" (repère-la par son titre dans le texte) et ignore le contenu des autres sections.\n\n"
+      + "Découpe ses instructions en étapes séparées qu'une tricoteuse cocherait une par une (en général une étape par ligne/rang ; tu peux regrouper "
+      + "de courtes lignes de mise en place). Résous chaque séquence entre parenthèses en gardant seulement le nombre correspondant à cette taille.\n\n"
+      + "Cas particulier important — bloc de plusieurs rangs répété tel quel (ex : « Rangs 1 à 8 : [instructions] ... Répéter ces 8 rangs 22 fois », "
+      + "ou « répéter les rangs 1-8, 22 fois ») : regroupe TOUT le bloc de rangs numérotés en UNE SEULE étape, dont le texte contient les instructions "
+      + "de chaque rang du bloc dans l'ordre (ex : « Rang 1 : ... \\nRang 2 : ... » etc.), mets le nombre de rangs que compte ce bloc dans "
+      + "rowsPerRepeat (ex : 8), et le nombre de fois où il faut répéter tout le bloc dans repeatCount (résolu pour cette taille, ex : 22).\n\n"
+      + "Autre cas : quand une étape répète seulement un motif à l'intérieur d'un même rang (ex : « *k2, p2* répéter 6 fois » dans un seul rang) ou "
+      + "une instruction simple un certain nombre de fois sans que ce soit un bloc de plusieurs rangs numérotés, mets ce nombre dans repeatCount mais "
+      + "laisse rowsPerRepeat à null. Si l'étape n'a aucune répétition, repeatCount et rowsPerRepeat doivent être null tous les deux. "
+      + "Garde le texte fidèle à l'original (nombres de mailles inclus), écrit clairement.\n\n"
+      + "Réponds uniquement avec un JSON de cette forme exacte, sans texte autour ni balises markdown :\n"
+      + "{\"steps\": [ { \"text\": string, \"repeatCount\": number|null, \"rowsPerRepeat\": number|null } ] }\n\n"
+      + "--- TEXTE COMPLET DU PATRON ---\n" + w.rawText;
+    sample.json(prompt, { modelTier: "default", cache: false, onText: function(u){
+      w.progressNote = "Section " + (w.sectionsDone + 1) + " / " + w.totalSections + " : " + name + " (" + u.text.length + " car. reçus)";
+      if (w.busy) doRender();
+    } }).then(function(data){
+      if (!w.busy) return;
+      var steps = (data && Array.isArray(data.steps)) ? data.steps.map(function(st){
+        return {
+          text: String(st.text || ""),
+          repeatCount: (typeof st.repeatCount === "number" ? st.repeatCount : null),
+          rowsPerRepeat: (typeof st.rowsPerRepeat === "number" && st.rowsPerRepeat > 1 ? st.rowsPerRepeat : null)
+        };
+      }) : [];
+      w.partialSections.push({ name: name, steps: steps });
+      w.sectionsDone++;
+      queue.shift();
+      runQueue(queue);
+    }).catch(function(err){
+      console.error(err);
+      if (!w.busy) return;
+      w.partialSections.push({ name: name, steps: [] });
+      w.sectionsDone++;
+      queue.shift();
+      runQueue(queue);
+    });
+  }
+
+  sample.json(namesPrompt, { modelTier: "quick" }).then(function(names){
+    if (!w.busy) return;
+    var sectionNames = (Array.isArray(names) && names.length) ? names.map(String).slice(0, 20) : ["Patron complet"];
+    w.totalSections = sectionNames.length;
+    runQueue(sectionNames);
+  }).catch(function(err){
+    console.error(err);
+    if (!w.busy) return;
+    w.totalSections = 1;
+    runQueue(["Patron complet"]);
+  });
+}
+
+function extractReferenceInfo(rawText){
+  if (!sample) return Promise.resolve(null);
+  var prompt = "Voici le texte brut d'un patron de tricot. Extrais uniquement les informations de référence suivantes, telles qu'elles apparaissent "
+    + "dans le patron (si une information est absente, mets une chaîne vide ou un tableau vide, n'invente rien) :\n"
+    + "- gauge: l'échantillon (ex: '16 mailles et 24 rangs = 10x10cm au point jersey')\n"
+    + "- needles: les tailles d'aiguilles utilisées avec leur usage\n"
+    + "- yarn: le fil utilisé / poids de fil\n"
+    + "- notions: le petit matériel nécessaire\n"
+    + "- techniques: les techniques utilisées dans ce patron, en une phrase\n"
+    + "- abbreviations: la liste des abréviations utilisées dans le patron, sous forme de tableau d'objets {short, meaning}\n\n"
+    + "Réponds uniquement avec un JSON de cette forme exacte, sans texte autour :\n"
+    + "{\"gauge\": string, \"needles\": string, \"yarn\": string, \"notions\": string, \"techniques\": string, \"abbreviations\": [{\"short\": string, \"meaning\": string}]}\n\n"
+    + "--- TEXTE DU PATRON ---\n" + rawText;
+  return sample.json(prompt, { modelTier: "quick" }).catch(function(err){ console.error("reference extraction failed", err); return null; });
+}
+
+function runFullExtraction(){
+  var w = state.wizard;
+  var referencePromise = extractReferenceInfo(w.rawText);
+  w.projectId = null;
+  w.chartsPromise = detectAndReadCharts(w, function(msg){
+    w.chartNote = msg;
+    if (w.projectId && state.chartsPending && state.chartsPending[w.projectId]){
+      state.chartsPending[w.projectId] = msg;
+      if (state.view === "project" && state.currentId === w.projectId && state.activePanel !== "edit") render();
+    }
+  });
+  extractSectionsPipeline(w, function(sections){
+    finishProjectCreation(w, sections, referencePromise);
+  });
+}
+
+function sampleErrorMessage(err){
+  var code = err && err.code;
+  if (code === "not_granted") return "L'accès à Claude n'a pas été autorisé pour cette page.";
+  if (code === "rate_limited") return "Trop de demandes pour l'instant, réessaie dans un moment.";
+  if (code === "invalid_json") return "Claude n'a pas renvoyé un résultat exploitable.";
+  return "La structuration automatique a échoué.";
+}
+
+function withTimeout(promise, ms){
+  return new Promise(function(resolve, reject){
+    var settled = false;
+    var timer = setTimeout(function(){
+      if (settled) return;
+      settled = true;
+      reject({ code: "timeout", message: "délai dépassé" });
+    }, ms);
+    promise.then(function(v){
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(v);
+    }, function(e){
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(e);
+    });
+  });
+}
+
+function finishProjectCreation(w, sections, referencePromise){
+  var docData = {
+    title: w.title || "Mon patron",
+    sizes: w.sizes,
+    sizeIndex: w.sizeIndex,
+    rawText: w.rawText,
+    sections: sections,
+    progress: { flatIndex: 0, tally: 0 },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  if (!db){
+    w.busy = false;
+    w.error = "Le stockage n'est pas disponible ; ce projet ne pourra pas être sauvegardé.";
+    render();
+    return;
+  }
+  w.busy = true;
+  w.progressNote = "Enregistrement du projet...";
+  render();
+  withTimeout(db.collection("projects").add(docData), 20000).then(function(ref){
+    w.busy = false;
+    var seeded = Object.assign({}, docData, { id: ref.id });
+    openProject(ref.id, seeded);
+    if (w.chartsPromise) attachPdfCharts(w, ref.id);
+    if (w.coverPromise){
+      w.coverPromise.then(function(coverId){
+        if (!coverId) return;
+        db.collection("projects").doc(ref.id).update({ coverImageId: coverId }).then(function(){
+          if (state.currentDoc && state.currentDoc.id === ref.id) state.currentDoc.coverImageId = coverId;
+        }).catch(function(e){ console.error("saving cover failed", e); });
+      });
+    }
+    if (referencePromise){
+      referencePromise.then(function(refInfo){
+        if (!refInfo) return;
+        db.collection("projects").doc(ref.id).update({ reference: refInfo }).then(function(){
+          if (state.currentDoc && state.currentDoc.id === ref.id){ state.currentDoc.reference = refInfo; render(); }
+        }).catch(function(e){ console.error("saving reference failed", e); });
+      });
+    }
+  }).catch(function(err){
+    console.error(err);
+    w.busy = false;
+    w.error = (err && err.code === "timeout")
+      ? "L'enregistrement prend trop de temps. Vérifie ta connexion et réessaie."
+      : "Impossible d'enregistrer le projet.";
+    w.retrySections = sections;
+    render();
+  });
+}
+
+// ---------- PROJECT / TRACKER VIEW ----------
+function renderProject(){
+  var p = state.currentDoc;
+  var wrap = el("div", {}, []);
+  wrap.appendChild(el("div", {class:"topbar"}, [
+    el("button", {class:"back", onclick:function(){ goHome(); }}, ["‹"]),
+    el("div", {class:"title"}, [p ? (p.title || "Patron") : "Chargement..."]),
+    p ? el("div", {class:"tag"}, [(p.sizes && p.sizes[p.sizeIndex]) || ""]) : null
+  ]));
+  var main = el("main", {}, []);
+  if (!p){
+    if (state.projectLoadError){
+      main.appendChild(el("div", {class:"error-banner"}, [
+        el("div", {}, [state.projectLoadError]),
+        el("button", {onclick:function(){ openProject(state.currentId); }}, ["↻"])
+      ]));
+    } else {
+      main.appendChild(el("div", {class:"step-busy"}, [spinner(), text("Chargement du projet...")]));
+    }
+    wrap.appendChild(main);
+    return wrap;
+  }
+
+  var flat = flattenSections(p.sections || []);
+  var progress = p.progress || { flatIndex:0, tally:0 };
+  var idx = Math.min(progress.flatIndex || 0, Math.max(flat.length - 1, 0));
+
+  // section nav
+  if ((p.sections||[]).length){
+    var nav = el("div", {class:"section-nav"}, []);
+    p.sections.forEach(function(sec, si){
+      var firstFlat = flat.findIndex(function(f){ return f.sectionIndex === si; });
+      var isActive = flat[idx] && flat[idx].sectionIndex === si;
+      nav.appendChild(el("button", {class:"section-chip"+(isActive?" active":""), onclick:function(){ if (firstFlat>=0) goToIndex(firstFlat); }}, [sec.name || ("Section "+(si+1))]));
+    });
+    main.appendChild(nav);
+  }
+
+  // overall progress
+  var pct = flat.length ? Math.round((idx/Math.max(flat.length-1,1))*100) : 0;
+  main.appendChild(el("div", {class:"progress-row"}, [
+    el("div", {}, ["Progression"]),
+    el("div", {class:"bar-track"}, [el("div", {class:"bar-fill", style:"width:"+pct+"%"})]),
+    el("div", {}, [pct+"%"])
+  ]));
+
+  if (state.chartsPending && state.chartsPending[p.id]){
+    main.appendChild(el("div", {class:"step-busy", style:"padding:2px 4px;font-size:13px;"}, [spinner(), text(state.chartsPending[p.id])]));
+  } else if (state.chartsFound && state.chartsFound[p.id]){
+    var nFound = state.chartsFound[p.id];
+    main.appendChild(el("div", {class:"toggle-row card", style:"padding:10px 14px;gap:10px;"}, [
+      el("span", {class:"small-note", style:"color:var(--ink);"}, [nFound + (nFound > 1 ? " grilles trouvées" : " grille trouvée") + " dans le PDF."]),
+      el("div", {style:"display:flex;gap:10px;align-items:center;"}, [
+        el("button", {class:"link-btn", onclick:function(){ delete state.chartsFound[p.id]; state.activePanel = "charts"; render(); }}, ["Voir"]),
+        el("button", {class:"icon-btn", onclick:function(){ delete state.chartsFound[p.id]; render(); }}, ["✕"])
+      ])
+    ]));
+  }
+
+  if (state.error){
+    main.appendChild(el("div", {class:"error-banner"}, [
+      el("div", {}, [state.error]),
+      el("button", {onclick:function(){ state.error=null; render(); }}, ["✕"])
+    ]));
+  }
+
+  if (state.activePanel === "reference"){
+    main.appendChild(renderReferencePanel(p));
+  } else if (state.activePanel === "charts"){
+    main.appendChild(renderChartsPanel(p));
+  } else if (!flat.length){
+    main.appendChild(el("div", {class:"empty"}, [
+      el("div", {class:"display"}, ["Pas encore d'étapes"]),
+      el("div", {}, ["Ajoute des étapes à la main via le mode édition ci-dessous."])
+    ]));
+  } else {
+    var cur = flat[idx];
+    var stepCard = el("div", {class:"step-card"}, [
+      el("div", {class:"step-eyebrow"}, [cur.sectionName || ""]),
+      el("div", {class:"step-text"}, [cur.text || ""])
+    ]);
+    if (cur.rowsPerRepeat && cur.rowsPerRepeat > 1 && cur.repeatCount){
+      var rpTotal = cur.rowsPerRepeat;
+      var rpRepeat = cur.repeatCount;
+      var rpTally = Math.min(progress.tally || 0, rpRepeat);
+      var rpRow = Math.min(Math.max(progress.row || 1, 1), rpTotal);
+      var rpDone = rpTally >= rpRepeat;
+      var rbox = el("div", {class:"repeat-box"}, []);
+      if (rpDone) rbox.appendChild(el("div", {class:"repeat-done-tag"}, ["Répétitions terminées ✓"]));
+      rbox.appendChild(el("div", {class:"label"}, ["Rangs 1 à " + rpTotal + ", répéter " + rpRepeat + " fois"]));
+      rbox.appendChild(el("div", {class:"repeat-controls"}, [
+        el("button", {class:"round-btn", disabled: rpTally<=0 && rpRow<=1, onclick:function(){ changeRow(-1, rpTotal, rpRepeat); }}, ["–"]),
+        el("div", {style:"display:flex;flex-direction:column;align-items:center;min-width:90px;"}, [
+          el("div", {class:"count"}, ["Rang " + rpRow]),
+          el("div", {class:"small-note"}, ["sur " + rpTotal])
+        ]),
+        el("button", {class:"round-btn", disabled: rpDone, onclick:function(){ changeRow(1, rpTotal, rpRepeat); }}, ["+"])
+      ]));
+      rbox.appendChild(el("div", {class:"bar-track"}, [el("div", {class:"bar-fill", style:"width:"+Math.round((rpRow/rpTotal)*100)+"%"})]));
+      rbox.appendChild(el("hr", {class:"sep"}));
+      rbox.appendChild(el("div", {class:"repeat-controls"}, [
+        el("button", {class:"round-btn", style:"width:34px;height:34px;font-size:16px;", disabled: rpTally<=0, onclick:function(){ changeCycle(-1, rpRepeat); }}, ["–"]),
+        el("div", {style:"display:flex;flex-direction:column;align-items:center;"}, [
+          el("div", {class:"count", style:"font-size:20px;"}, [rpTally + " / " + rpRepeat]),
+          el("div", {class:"small-note"}, ["répétitions complètes"])
+        ]),
+        el("button", {class:"round-btn", style:"width:34px;height:34px;font-size:16px;", disabled: rpDone, onclick:function(){ changeCycle(1, rpRepeat); }}, ["+"])
+      ]));
+      rbox.appendChild(el("div", {class:"bar-track"}, [el("div", {class:"bar-fill", style:"width:"+Math.round((rpTally/rpRepeat)*100)+"%"})]));
+      stepCard.appendChild(rbox);
+    } else if (cur.repeatCount){
+      var tally = Math.min(progress.tally || 0, cur.repeatCount);
+      var done = tally >= cur.repeatCount;
+      var rbox = el("div", {class:"repeat-box"}, []);
+      if (done) rbox.appendChild(el("div", {class:"repeat-done-tag"}, ["Répétitions terminées ✓"]));
+      rbox.appendChild(el("div", {class:"label"}, ["Répéter " + cur.repeatCount + " fois"]));
+      rbox.appendChild(el("div", {class:"repeat-controls"}, [
+        el("button", {class:"round-btn", disabled: tally<=0, onclick:function(){ changeTally(-1, cur.repeatCount); }}, ["–"]),
+        el("div", {class:"count"}, [tally + " / " + cur.repeatCount]),
+        el("button", {class:"round-btn", disabled: tally>=cur.repeatCount, onclick:function(){ changeTally(1, cur.repeatCount); }}, ["+"])
+      ]));
+      var track = el("div", {class:"bar-track"}, [el("div", {class:"bar-fill", style:"width:"+Math.round((tally/cur.repeatCount)*100)+"%"})]);
+      rbox.appendChild(track);
+      stepCard.appendChild(rbox);
+    }
+    main.appendChild(stepCard);
+  }
+
+  function togglePanel(name){
+    state.activePanel = (state.activePanel === name) ? null : name;
+    render();
+  }
+
+  main.appendChild(el("div", {class:"toggle-row"}, [
+    el("div", {style:"display:flex;gap:14px;flex-wrap:wrap;"}, [
+      el("button", {class:"link-btn", onclick:function(){ togglePanel("reference"); }}, [state.activePanel==="reference" ? "Fermer l'aide-mémoire" : "Aide-mémoire"]),
+      el("button", {class:"link-btn", onclick:function(){ togglePanel("charts"); }}, [state.activePanel==="charts" ? "Fermer les grilles" : "Grilles"]),
+      (assets || LOCAL_MODE) ? el("button", {class:"link-btn", onclick:function(){ pickImage(function(f){ setProjectCover(p.id, f); }); }}, [state.coverBusy === p.id ? "Envoi de la photo..." : ((p.coverImageId || p.coverData) ? "Changer la photo" : "Ajouter une photo")]) : null,
+      downloads ? el("button", {class:"link-btn", disabled: !!state.exportBusy, onclick:function(){ exportProject(p); }}, [state.exportBusy ? "Préparation de l'export..." : "Exporter ce projet"]) : null
+    ]),
+    el("div", {style:"display:flex;gap:14px;"}, [
+      el("button", {class:"link-btn", onclick:function(){ togglePanel("edit"); }}, [state.activePanel==="edit" ? "Fermer l'édition" : "Modifier le patron"]),
+      sample ? el("button", {class:"link-btn", onclick:openChangeSize}, ["Changer de taille"]) : null
+    ])
+  ]));
+
+  if (state.activePanel === "edit"){
+    main.appendChild(renderEditor(p));
+  }
+
+  wrap.appendChild(main);
+
+  // bottom nav
+  wrap.appendChild(el("div", {class:"bottom-nav"}, [
+    el("button", {class:"nav-btn", disabled: idx<=0, onclick:function(){ goToIndex(idx-1); }}, ["‹"]),
+    el("div", {class:"step-pos"}, [flat.length ? ("Étape " + (idx+1) + " / " + flat.length) : ""]),
+    el("button", {class:"nav-btn primary", disabled: idx>=flat.length-1, onclick:function(){ goToIndex(idx+1); }}, ["›"])
+  ]));
+
+  return wrap;
+}
+
+function currentRef(){
+  if (!db || !state.currentId) return null;
+  return db.collection("projects").doc(state.currentId);
+}
+
+function goToIndex(newIdx){
+  var p = state.currentDoc;
+  if (!p) return;
+  var newProgress = { flatIndex: newIdx, tally: 0, row: 1 };
+  p.progress = newProgress; // optimistic local update — don't wait on the round trip to feel responsive
+  render();
+  var ref = currentRef();
+  if (!ref) return;
+  queueWrite(function(){
+    return ref.update({ progress: newProgress, updatedAt: new Date().toISOString() });
+  }).catch(function(err){ console.error("goToIndex save failed", err); });
+}
+
+function changeTally(delta, max){
+  var p = state.currentDoc;
+  if (!p) return;
+  var progress = p.progress || { flatIndex:0, tally:0 };
+  var newTally = Math.max(0, Math.min(max, (progress.tally||0) + delta));
+  var newProgress = { flatIndex: progress.flatIndex||0, tally: newTally };
+  p.progress = newProgress; // optimistic local update
+  render();
+  var ref = currentRef();
+  if (!ref) return;
+  queueWrite(function(){
+    return ref.update({ progress: newProgress, updatedAt: new Date().toISOString() });
+  }).catch(function(err){ console.error("changeTally save failed", err); });
+}
+
+// Nested row/repeat counter — for steps that bundle a block of several
+// numbered rows (rowsPerRepeat) which itself repeats a number of times
+// (repeatCount), e.g. "rows 1 to 8, 22 times". `row` tracks the position
+// inside the current block (1..rowsPerRepeat); crossing its edge carries
+// one full repeat into `tally` (completed blocks, 0..repeatCount) and
+// wraps the row back around, the same way the chart trackers do.
+function changeRow(delta, rowsPerRepeat, repeatCount){
+  var p = state.currentDoc;
+  if (!p) return;
+  var progress = p.progress || { flatIndex:0, tally:0, row:1 };
+  var tally = progress.tally || 0;
+  var row = (progress.row || 1) + delta;
+  if (row > rowsPerRepeat){
+    if (tally < repeatCount){ tally += 1; row = 1; }
+    else { row = rowsPerRepeat; }
+  } else if (row < 1){
+    if (tally > 0){ tally -= 1; row = rowsPerRepeat; }
+    else { row = 1; }
+  }
+  var newProgress = { flatIndex: progress.flatIndex||0, tally: tally, row: row };
+  p.progress = newProgress; // optimistic local update
+  render();
+  var ref = currentRef();
+  if (!ref) return;
+  queueWrite(function(){
+    return ref.update({ progress: newProgress, updatedAt: new Date().toISOString() });
+  }).catch(function(err){ console.error("changeRow save failed", err); });
+}
+
+// Manual correction of the completed-repeats count alone (e.g. the knitter
+// miscounted) — jumps straight to the start of the target block's first row.
+function changeCycle(delta, repeatCount){
+  var p = state.currentDoc;
+  if (!p) return;
+  var progress = p.progress || { flatIndex:0, tally:0, row:1 };
+  var newTally = Math.max(0, Math.min(repeatCount, (progress.tally||0) + delta));
+  var newProgress = { flatIndex: progress.flatIndex||0, tally: newTally, row: 1 };
+  p.progress = newProgress; // optimistic local update
+  render();
+  var ref = currentRef();
+  if (!ref) return;
+  queueWrite(function(){
+    return ref.update({ progress: newProgress, updatedAt: new Date().toISOString() });
+  }).catch(function(err){ console.error("changeCycle save failed", err); });
+}
+
+function openChangeSize(){
+  var p = state.currentDoc;
+  if (!p) return;
+  var w = { stage:"pick-size-only", sizes: p.sizes || ["Taille unique"], sizeIndex: p.sizeIndex||0, busy:false, rawText: p.rawText || "", title: p.title };
+  state.wizard = w;
+  renderChangeSizeModalInline();
+}
+
+function renderChangeSizeModalInline(){
+  // simple inline replace of main content via a lightweight overlay approach:
+  var p = state.currentDoc;
+  var overlay = el("div", {class:"card", id:"resize-card"}, [
+    el("label", {class:"field-label"}, ["Nouvelle taille"]),
+    el("div", {class:"sizes-grid"}, (state.wizard.sizes).map(function(s,i){
+      return el("button", {class:"size-chip"+(state.wizard.sizeIndex===i?" active":""), onclick:function(){ state.wizard.sizeIndex=i; renderChangeSizeModalInline(); }}, [s]);
+    })),
+    el("div", {style:"display:flex;gap:8px;margin-top:10px;"}, [
+      el("button", {class:"btn btn-primary btn-sm", disabled: state.wizard.busy, onclick: applyChangeSize}, [state.wizard.busy ? "Génération..." : "Regénérer les étapes"]),
+      el("button", {class:"btn btn-ghost btn-sm", onclick:function(){ state.wizard = null; render(); }}, ["Annuler"])
+    ]),
+    state.wizard.busy ? el("div", {class:"step-busy"}, [spinner(), text(state.wizard.progressNote || "Claude régénère les étapes pour cette taille...")]) : null,
+    state.wizard.busy ? el("button", {class:"link-btn", onclick:function(){
+      var w = state.wizard;
+      var got = w.partialSections || [];
+      w.busy = false;
+      if (got.length){
+        var ref = currentRef();
+        queueWrite(function(){ return ref.update({ sizeIndex: w.sizeIndex, sections: got, progress:{flatIndex:0,tally:0}, updatedAt: new Date().toISOString() }); }).then(function(){ state.wizard = null; render(); });
+      } else {
+        state.wizard = null; render();
+      }
+    }}, ["Garder ce qui est déjà généré (" + (state.wizard.sectionsDone||0) + "/" + (state.wizard.totalSections||0) + ") et arrêter"]) : null
+  ]);
+  var existing = document.getElementById("resize-card");
+  if (existing) existing.replaceWith(overlay);
+  else {
+    var main = document.querySelector("main");
+    if (main) main.insertBefore(overlay, main.firstChild);
+  }
+}
+
+function applyChangeSize(){
+  var w = state.wizard;
+  if (!sample || !w.rawText){
+    var ref0 = currentRef();
+    queueWrite(function(){ return ref0.update({ sizeIndex: w.sizeIndex, progress:{flatIndex:0,tally:0}, updatedAt: new Date().toISOString() }); }).then(function(){
+      state.wizard = null; render();
+    });
+    return;
+  }
+  w.renderFn = renderChangeSizeModalInline;
+  extractSectionsPipeline(w, function(sections){
+    w.progressNote = "Enregistrement...";
+    renderChangeSizeModalInline();
+    var ref = currentRef();
+    var patch = { sizeIndex: w.sizeIndex, sections: sections, progress:{flatIndex:0,tally:0}, updatedAt: new Date().toISOString() };
+    withTimeout(ref.update(patch), 20000).then(function(){
+      state.wizard = null;
+      if (state.currentDoc) Object.assign(state.currentDoc, patch);
+      render();
+    }).catch(function(err){
+      console.error(err);
+      state.wizard = null;
+      state.error = (err && err.code === "timeout")
+        ? "L'enregistrement prend trop de temps. Vérifie ta connexion et réessaie."
+        : "Impossible d'enregistrer la nouvelle taille.";
+      render();
+    });
+  });
+}
+
+function deleteProject(id){
+  if (!db) return;
+  state.confirmDelete = null;
+  state.projects = state.projects.filter(function(p){ return p.id !== id; });
+  goHome(true); // optimistic — don't wait on the round trip
+  db.collection("projects").doc(id).delete().catch(function(err){
+    console.error("delete failed", err);
+  });
+}
+
+// ---------- REFERENCE / CHEAT SHEET ----------
+function renderReferencePanel(p){
+  var ref = p.reference;
+  if (!ref){
+    return el("div", {class:"step-card"}, [
+      el("div", {class:"step-eyebrow"}, ["Aide-mémoire"]),
+      el("div", {class:"step-text", style:"font-size:16px;"}, ["Pas encore générée pour ce projet."]),
+      sample ? el("button", {class:"btn btn-primary btn-sm", disabled: state.refBusy, onclick:function(){ generateReferenceForProject(p); }}, [state.refBusy ? "Génération..." : "Générer l'aide-mémoire"]) : null
+    ]);
+  }
+  var rows = [];
+  if (ref.gauge) rows.push(refRow("Échantillon", ref.gauge));
+  if (ref.needles) rows.push(refRow("Aiguilles", ref.needles));
+  if (ref.yarn) rows.push(refRow("Fil", ref.yarn));
+  if (ref.notions) rows.push(refRow("Petit matériel", ref.notions));
+  if (ref.techniques) rows.push(refRow("Techniques", ref.techniques));
+  var box = el("div", {class:"step-card"}, [
+    el("div", {class:"step-eyebrow"}, ["Aide-mémoire"])
+  ].concat(rows));
+  if (ref.abbreviations && ref.abbreviations.length){
+    var abbrBox = el("div", {class:"repeat-box"}, [
+      el("div", {class:"label"}, ["Abréviations"])
+    ]);
+    ref.abbreviations.forEach(function(a){
+      abbrBox.appendChild(el("div", {style:"display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);"}, [
+        el("div", {style:"font-weight:700;min-width:70px;"}, [a.short || ""]),
+        el("div", {class:"small-note"}, [a.meaning || ""])
+      ]));
+    });
+    box.appendChild(abbrBox);
+  }
+  return box;
+}
+
+function refRow(label, value){
+  return el("div", {}, [
+    el("div", {class:"step-eyebrow", style:"margin-bottom:4px;"}, [label]),
+    el("div", {class:"small-note", style:"font-size:14.5px;color:var(--ink);"}, [value])
+  ]);
+}
+
+function generateReferenceForProject(p){
+  state.refBusy = true;
+  render();
+  extractReferenceInfo(p.rawText || "").then(function(refInfo){
+    state.refBusy = false;
+    if (!refInfo){ state.error = "Impossible de générer l'aide-mémoire."; render(); return; }
+    p.reference = refInfo;
+    var ref = currentRef();
+    if (ref) queueWrite(function(){ return ref.update({ reference: refInfo, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
+    render();
+  });
+}
+
+// ---------- CHARTS ----------
+function newChartId(){ return "c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8); }
+
+function renderChartsPanel(p){
+  var box = el("div", {style:"display:flex;flex-direction:column;gap:14px;"}, []);
+  var charts = p.charts || [];
+  if (!charts.length && !state.chartDraft){
+    box.appendChild(el("div", {class:"step-card"}, [
+      el("div", {class:"step-eyebrow"}, ["Grilles"]),
+      el("div", {class:"step-text", style:"font-size:16px;"}, ["Pas encore de grille ajoutée. Prends en photo une, ou exporte la page du PDF qui contient le diagramme de motif."])
+    ]));
+  }
+  charts.forEach(function(c){ box.appendChild(renderChartCard(p, c)); });
+
+  if (state.chartDraft){
+    box.appendChild(renderChartDraftForm());
+  } else {
+    box.appendChild(el("button", {class:"btn btn-ghost btn-sm", onclick:function(){
+      state.chartDraft = { name: "Grille " + (charts.length + 1), file: null, totalRows: "", notes: "", busy: false, error: null };
+      render();
+    }}, ["+ Ajouter une grille"]));
+  }
+  return box;
+}
+
+function renderChartCard(p, c){
+  var confirming = state.confirmDeleteChart === c.id;
+  var head = el("div", {class:"toggle-row"}, [
+    el("div", {class:"step-eyebrow"}, [c.name || "Grille"]),
+    confirming
+      ? el("div", {class:"confirm-inline"}, [
+          el("span", {class:"small-note"}, ["Supprimer ?"]),
+          el("button", {class:"btn btn-sm btn-danger", onclick:function(){ removeChart(p, c.id); }}, ["Oui"]),
+          el("button", {class:"btn btn-sm btn-ghost", onclick:function(){ state.confirmDeleteChart=null; render(); }}, ["Non"])
+        ])
+      : el("button", {class:"icon-btn", onclick:function(){ state.confirmDeleteChart = c.id; render(); }}, ["✕"])
+  ]);
+
+  var body = [];
+  if (c.readingNotes){
+    var open = state.readingOpen === c.id;
+    body.push(el("div", {class:"reading-box"}, [
+      el("button", {class:"link-btn", onclick:function(){ state.readingOpen = open ? null : c.id; render(); }}, [open ? "▾ Comment lire cette grille" : "▸ Comment lire cette grille"]),
+      open ? el("div", {class:"small-note", style:"white-space:pre-wrap;color:var(--ink);"}, [c.readingNotes]) : null
+    ]));
+  }
+
+  var tr = activeTracker(c);
+  body.push(renderTrackerPanel(p, c, tr));
+
+  var chartImgSrc = c.imageData || (c.imageId ? "/_blob/" + c.imageId : null);
+  if (c.grid){
+    if (chartImgSrc && state.showChartPhoto === c.id){
+      body.push(el("img", {src: chartImgSrc, style:"width:100%;border-radius:10px;border:1px solid var(--line);"}));
+    }
+    body.push(renderInteractiveGrid(p, c, tr));
+    body.push(el("div", {class:"toggle-row", style:"flex-wrap:wrap;gap:4px 14px;"}, [
+      el("button", {class:"link-btn", onclick:function(){ state.chartEditCells = (state.chartEditCells===c.id) ? null : c.id; render(); }}, [state.chartEditCells===c.id ? "Terminer la correction" : "Corriger la grille"]),
+      chartImgSrc ? el("button", {class:"link-btn", onclick:function(){ state.showChartPhoto = (state.showChartPhoto === c.id) ? null : c.id; render(); }}, [state.showChartPhoto === c.id ? "Masquer la photo" : "Voir la photo"]) : null,
+      sample && c.imageId ? el("button", {class:"link-btn", onclick:function(){ generateChartGrid(p, c); }}, [c._busy ? "Régénération..." : "Régénérer avec l'IA"]) : null
+    ]));
+  } else {
+    body.push(chartImgSrc ? el("img", {src: chartImgSrc, style:"width:100%;border-radius:10px;border:1px solid var(--line);"}) : null);
+    body.push(el("button", {class:"btn btn-primary btn-sm", onclick:function(){ createBlankGrid(p, c); }}, ["Créer la grille à remplir moi-même"]));
+    if (c.imageId && sample){
+      body.push(el("button", {class:"btn btn-outline btn-sm", disabled: c._busy, onclick:function(){ generateChartGrid(p, c); }}, [c._busy ? "Analyse de l'image en cours..." : "Essayer de la générer avec l'IA"]));
+    }
+  }
+  if (c._error) body.push(el("div", {class:"error-banner"}, [el("div", {}, [c._error])]));
+
+  return el("div", {class:"step-card"}, [head].concat(body));
+}
+
+// ---------- CHART TRACKERS ----------
+// One chart can be followed from several places at once (body, each sleeve),
+// each with its own position, repeat count, target and note.
+function getTrackers(c){
+  if (c.trackers && c.trackers.length) return c.trackers;
+  return [{ id: "t_main", name: "Principal", row: c.currentRow || 1, repeat: 1, targetRepeat: null, targetRow: null, note: "" }];
+}
+
+function activeTracker(c){
+  var ts = getTrackers(c);
+  var id = (state.activeTracker && state.activeTracker[c.id]) || c.activeTrackerId;
+  for (var i = 0; i < ts.length; i++) if (ts[i].id === id) return ts[i];
+  return ts[0];
+}
+
+function mutateChart(p, chartId, fn){
+  var res = cloneChartsWithTarget(p, chartId);
+  if (!res.target) return;
+  if (!res.target.trackers || !res.target.trackers.length) res.target.trackers = getTrackers(res.target);
+  fn(res.target);
+  p.charts = res.charts;
+  persistCharts(p);
+  render();
+}
+
+function findTracker(chart, trackerId){
+  for (var i = 0; i < chart.trackers.length; i++) if (chart.trackers[i].id === trackerId) return chart.trackers[i];
+  return null;
+}
+
+// Row numbers are 1-based; "row" is the row still to knit. Going past the
+// last row of the repeat starts the next repeat at row 1.
+function setTrackerPosition(t, total, row, repeat){
+  if (row > total){ row = 1; repeat++; }
+  if (row < 1){ if (repeat > 1){ repeat--; row = total; } else { row = 1; } }
+  t.row = row; t.repeat = repeat;
+}
+
+function stepTracker(p, c, trackerId, delta){
+  mutateChart(p, c.id, function(ch){
+    var t = findTracker(ch, trackerId); if (!t) return;
+    setTrackerPosition(t, ch.totalRows || 1, (t.row || 1) + delta, t.repeat || 1);
+  });
+}
+
+function markRowDone(p, c, trackerId, r){
+  mutateChart(p, c.id, function(ch){
+    var t = findTracker(ch, trackerId); if (!t) return;
+    setTrackerPosition(t, ch.totalRows || 1, r + 1, t.repeat || 1);
+  });
+}
+
+function updateTracker(p, c, trackerId, patch){
+  mutateChart(p, c.id, function(ch){
+    var t = findTracker(ch, trackerId); if (!t) return;
+    Object.keys(patch).forEach(function(k){ t[k] = patch[k]; });
+  });
+}
+
+function addTrackerFrom(p, c, fromTracker, name){
+  var id = "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+  mutateChart(p, c.id, function(ch){
+    ch.trackers.push({ id: id, name: name, row: fromTracker.row || 1, repeat: fromTracker.repeat || 1,
+      targetRepeat: fromTracker.targetRepeat || null, targetRow: fromTracker.targetRow || null,
+      note: "Démarré depuis « " + fromTracker.name + " » au rang " + (fromTracker.row || 1) + " de la répétition " + (fromTracker.repeat || 1) + "." });
+    ch.activeTrackerId = id;
+  });
+  state.activeTracker = state.activeTracker || {};
+  state.activeTracker[c.id] = id;
+  render();
+}
+
+function removeTracker(p, c, trackerId){
+  mutateChart(p, c.id, function(ch){
+    if (ch.trackers.length <= 1) return;
+    ch.trackers = ch.trackers.filter(function(t){ return t.id !== trackerId; });
+    if (ch.activeTrackerId === trackerId) ch.activeTrackerId = ch.trackers[0].id;
+  });
+  if (state.activeTracker) delete state.activeTracker[c.id];
+}
+
+function selectTracker(p, c, trackerId){
+  state.activeTracker = state.activeTracker || {};
+  state.activeTracker[c.id] = trackerId;
+  mutateChart(p, c.id, function(ch){ ch.activeTrackerId = trackerId; });
+}
+
+function rowsLeft(t, total){
+  if (!t.targetRepeat || !t.targetRow) return null;
+  var cur = ((t.repeat || 1) - 1) * total + (t.row || 1);
+  var tgt = (t.targetRepeat - 1) * total + t.targetRow;
+  return tgt - cur + 1;
+}
+
+function renderTrackerPanel(p, c, tr){
+  var trackers = getTrackers(c);
+  var total = c.totalRows || 1;
+  var box = el("div", {class:"repeat-box"}, []);
+
+  if (trackers.length > 1 || state.newTracker === c.id){
+    box.appendChild(el("div", {class:"section-nav"}, trackers.map(function(t){
+      return el("button", {class:"section-chip" + (t.id === tr.id ? " active" : ""), onclick:function(){ selectTracker(p, c, t.id); }},
+        [t.name + " · R" + (t.row || 1) + " rép." + (t.repeat || 1)]);
+    })));
+  }
+
+  box.appendChild(el("div", {class:"label"}, [tr.name]));
+  box.appendChild(el("div", {class:"repeat-controls"}, [
+    el("button", {class:"round-btn", onclick:function(){ stepTracker(p, c, tr.id, -1); }}, ["–"]),
+    el("div", {style:"display:flex;flex-direction:column;align-items:center;min-width:110px;"}, [
+      el("div", {class:"count"}, ["Rang " + (tr.row || 1)]),
+      el("div", {class:"small-note"}, ["sur " + total + " · répétition " + (tr.repeat || 1)])
+    ]),
+    el("button", {class:"round-btn", title:"Rang fait", onclick:function(){ stepTracker(p, c, tr.id, 1); }}, ["✓"])
+  ]));
+
+  var left = rowsLeft(tr, total);
+  if (left !== null){
+    box.appendChild(el("div", {class: left <= 0 ? "repeat-done-tag" : "small-note", style: left <= 0 ? "" : "color:var(--ink);"}, [
+      left <= 0
+        ? "Objectif atteint (rang " + tr.targetRow + " de la répétition " + tr.targetRepeat + ") — passe à la suite du patron."
+        : "Objectif : rang " + tr.targetRow + " de la répétition " + tr.targetRepeat + " — encore " + left + " rang" + (left > 1 ? "s" : "") + "."
+    ]));
+  }
+
+  var note = c.grid && c.grid.notes && c.grid.notes[String(tr.row || 1)];
+  if (note) box.appendChild(el("div", {class:"row-note"}, ["Rang " + (tr.row || 1) + " : " + note]));
+
+  box.appendChild(el("textarea", {rows:"2", placeholder:"Note (ex : arrêtée ici en séparant les manches)",
+    onchange:function(e){ updateTracker(p, c, tr.id, { note: e.target.value }); }}, [tr.note || ""]));
+
+  var settingsOpen = state.trackerSettings === tr.id;
+  box.appendChild(el("div", {class:"toggle-row", style:"flex-wrap:wrap;gap:6px 14px;"}, [
+    el("button", {class:"link-btn", onclick:function(){ state.newTracker = (state.newTracker === c.id) ? null : c.id; render(); }}, ["+ Nouveau repère depuis ici"]),
+    el("button", {class:"link-btn", onclick:function(){ state.trackerSettings = settingsOpen ? null : tr.id; render(); }}, [settingsOpen ? "Fermer les réglages" : "Objectif / position"])
+  ]));
+
+  if (state.newTracker === c.id){
+    box.appendChild(el("div", {style:"display:flex;gap:8px;"}, [
+      el("input", {type:"text", id:"new-tracker-name", placeholder:"Nom (ex : Manche gauche)"}),
+      el("button", {class:"btn btn-primary btn-sm", onclick:function(){
+        var v = (document.getElementById("new-tracker-name").value || "").trim();
+        if (!v) return;
+        state.newTracker = null;
+        addTrackerFrom(p, c, tr, v);
+      }}, ["Créer"])
+    ]));
+    box.appendChild(el("div", {class:"small-note"}, ["Le nouveau repère démarre au même rang et à la même répétition que « " + tr.name + " »."]));
+  }
+
+  if (settingsOpen){
+    function numInput(label, value, onCommit){
+      return el("div", {style:"flex:1;"}, [
+        el("label", {class:"field-label"}, [label]),
+        el("input", {type:"number", min:"1", value: value || "", onchange:function(e){ onCommit(parseInt(e.target.value, 10) || null); }})
+      ]);
+    }
+    box.appendChild(el("div", {style:"display:flex;gap:8px;"}, [
+      numInput("Rang actuel", tr.row, function(v){ if (v) updateTracker(p, c, tr.id, { row: Math.min(v, total) }); }),
+      numInput("Répétition", tr.repeat, function(v){ if (v) updateTracker(p, c, tr.id, { repeat: v }); })
+    ]));
+    box.appendChild(el("div", {style:"display:flex;gap:8px;"}, [
+      numInput("Objectif : rang", tr.targetRow, function(v){ updateTracker(p, c, tr.id, { targetRow: v }); }),
+      numInput("de la répétition", tr.targetRepeat, function(v){ updateTracker(p, c, tr.id, { targetRepeat: v }); })
+    ]));
+    if (trackers.length > 1){
+      box.appendChild(el("button", {class:"link-btn", style:"color:var(--danger);align-self:flex-start;", onclick:function(){ state.trackerSettings = null; removeTracker(p, c, tr.id); }}, ["Supprimer ce repère"]));
+    }
+  }
+  return box;
+}
+
+function renderInteractiveGrid(p, c, tr){
+  var grid = c.grid;
+  var editing = state.chartEditCells === c.id;
+  var trackers = getTrackers(c);
+  var curRow = tr.row || 1;
+  var rowNumbers = [];
+  for (var i = grid.rows; i >= 1; i--) rowNumbers.push(i);
+  var wrap = el("div", {}, []);
+  var scroll = el("div", {class:"chart-scroll"}, []);
+  rowNumbers.forEach(function(r){
+    var cells = grid.cells[r-1] || [];
+    var hasNote = grid.notes && grid.notes[String(r)];
+    var rowClass = "chart-row" + (curRow === r ? " current" : "") + (r < curRow ? " done" : "");
+    var cellEls = cells.map(function(sym, ci){
+      return el("div", {
+        class: "chart-cell chart-cell-" + sym,
+        onclick: editing ? function(e){ e.stopPropagation(); cycleCell(p, c, r-1, ci); } : null
+      });
+    });
+    var others = trackers.filter(function(t){ return t.id !== tr.id && (t.row || 1) === r; })
+      .map(function(t){ return el("span", {class:"chart-tag"}, [t.name]); });
+    scroll.appendChild(el("div", {
+      class: rowClass,
+      title: editing ? "" : "Taper : rang " + r + " fait",
+      onclick: editing ? null : function(){ markRowDone(p, c, tr.id, r); }
+    }, [
+      el("div", {class:"chart-rownum"}, [String(r)]),
+      el("div", {class:"chart-cells"}, cellEls),
+      hasNote ? el("div", {class:"chart-note-dot", title: grid.notes[String(r)]}) : null
+    ].concat(others)));
+  });
+  var colNums = [];
+  for (var cn = grid.cols; cn >= 1; cn--) colNums.push(el("div", {class:"chart-colnum"}, [String(cn)]));
+  scroll.appendChild(el("div", {class:"chart-row chart-foot"}, [
+    el("div", {class:"chart-rownum"}, [""]),
+    el("div", {class:"chart-cells"}, colNums)
+  ]));
+  wrap.appendChild(scroll);
+
+  // Bring the current row into view once per position change, not on every render.
+  var key = c.id + ":" + tr.id + ":" + curRow;
+  if (state.lastScrollKey !== key){
+    state.lastScrollKey = key;
+    setTimeout(function(){
+      var cur = scroll.querySelector(".chart-row.current");
+      if (cur) scroll.scrollTop = Math.max(0, cur.offsetTop - scroll.clientHeight / 2);
+    }, 0);
+  }
+
+  wrap.appendChild(el("div", {class:"small-note", style:"margin-top:6px;"}, [
+    editing ? "Mode correction : tape une case pour passer endroit → envers → torsade." : "Tape un rang quand tu l'as tricoté : le repère passe au rang suivant. Lecture sur l'endroit : de droite à gauche, de bas en haut."
+  ]));
+  var legend = el("div", {class:"chart-legend", style:"margin-top:6px;"}, []);
+  legend.appendChild(el("span", {}, [el("span", {class:"sw"}), "endroit"]));
+  legend.appendChild(el("span", {}, [el("span", {class:"sw", style:"background:var(--ink);border-radius:50%;width:8px;height:8px;display:inline-block;vertical-align:-1px;margin-right:4px;"}), "envers"]));
+  legend.appendChild(el("span", {}, [el("span", {class:"sw", style:"background:var(--highlight);"}), "torsade / spécial (voir note)"]));
+  wrap.appendChild(legend);
+  return wrap;
+}
+
+function cycleCell(p, c, rowIndex, colIndex){
+  var order = ["k", "p", "x"];
+  var res = cloneChartsWithTarget(p, c.id);
+  if (!res.target) return;
+  var cur = res.target.grid.cells[rowIndex][colIndex];
+  res.target.grid.cells[rowIndex][colIndex] = order[(order.indexOf(cur) + 1) % order.length];
+  p.charts = res.charts;
+  persistCharts(p);
+  render();
+}
+
+// Chart objects can come straight from a frozen db snapshot — never mutate
+// them in place. Clone the whole charts array (deeply, via JSON) and hand
+// back the matching (now-extensible) object to mutate instead.
+function cloneChartsWithTarget(p, chartId){
+  var charts = JSON.parse(JSON.stringify(p.charts || []));
+  var target = null;
+  for (var i = 0; i < charts.length; i++){ if (charts[i].id === chartId){ target = charts[i]; break; } }
+  return { charts: charts, target: target };
+}
+
+function persistCharts(p){
+  var ref = currentRef();
+  if (ref) queueWrite(function(){
+    var clean = (p.charts || []).map(function(c){ var copy = Object.assign({}, c); delete copy._busy; delete copy._error; return copy; });
+    return ref.update({ charts: clean, updatedAt: new Date().toISOString() });
+  }).catch(function(e){ console.error(e); });
+}
+
+function assetIdToBlob(imageId){
+  return new Promise(function(resolve, reject){
+    var img = new Image();
+    img.onload = function(){
+      try{
+        var canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || 800;
+        canvas.height = img.naturalHeight || 800;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(function(blob){
+          if (blob) resolve(blob); else reject(new Error("toBlob a échoué"));
+        }, "image/png");
+      } catch(e){ reject(e); }
+    };
+    img.onerror = function(){ reject(new Error("impossible de recharger l'image enregistrée")); };
+    img.src = "/_blob/" + imageId;
+  });
+}
+
+function chartGridPrompt(hints){
+  var hint = "";
+  if (hints && hints.name) hint += " Il s'agit de la grille « " + hints.name + " ».";
+  if (hints && hints.rows) hint += " La grille fait environ " + hints.rows + " rangs de haut.";
+  if (hints && hints.cols) hint += " Elle fait environ " + hints.cols + " mailles de large.";
+  return "Voici l'image d'une grille (chart) de tricot." + hint + " L'image peut contenir d'autres éléments autour (texte, légende, autre grille) : ne convertis que cette grille-là. Convertis-la en une grille de cases structurée, case par case.\n\n"
+    + "Utilise UNIQUEMENT ces 3 types de case :\n"
+    + "- \"k\" : maille endroit sur l'endroit (case vide sur le diagramme)\n"
+    + "- \"p\" : maille envers sur l'endroit (case avec un point sur le diagramme)\n"
+    + "- \"x\" : toute case impliquée dans une manœuvre spéciale (croisement de torsade/câble, augmentation, diminution, jeté, pas de maille, etc.)\n\n"
+    + "Si la légende du patron utilise d'autres symboles pour l'endroit et l'envers, applique-la. "
+    + "La première ligne du tableau \"cells\" (index 0) doit correspondre au rang 1, tout en bas de la grille. Chaque ligne doit avoir exactement "
+    + "\"cols\" éléments, dans l'ordre de lecture du diagramme sur l'endroit (de droite à gauche tel qu'affiché, mais stocke-les dans l'ordre gauche "
+    + "à droite du tableau, colonne 0 = la maille la plus à gauche du diagramme). Pour chaque rang qui contient au moins une case \"x\", ajoute une "
+    + "entrée dans \"notes\" (clé = numéro du rang en texte) avec une description concise et actionnable de la manœuvre à cet endroit du rang.\n\n"
+    + "Réponds uniquement avec un JSON de cette forme exacte, sans texte autour :\n"
+    + "{\"rows\": number, \"cols\": number, \"legend\": [{\"symbol\": \"k\"|\"p\"|\"x\", \"meaning\": string}], "
+    + "\"cells\": [[\"k\"|\"p\"|\"x\", ...], ...], \"notes\": {\"numéro de rang\": \"description\"}}";
+}
+
+function parseChartGrid(data, fallbackRows, fallbackCols){
+  var rows = parseInt(data && data.rows, 10) || fallbackRows || 1;
+  var cols = parseInt(data && data.cols, 10) || fallbackCols || 1;
+  rows = Math.max(1, Math.min(rows, 300)); cols = Math.max(1, Math.min(cols, 200));
+  var rawCells = (data && Array.isArray(data.cells)) ? data.cells : [];
+  var cells = [];
+  for (var ri = 0; ri < rows; ri++){
+    var src = Array.isArray(rawCells[ri]) ? rawCells[ri] : [];
+    var line = [];
+    for (var ci = 0; ci < cols; ci++){
+      var v = src[ci];
+      line.push((v === "p" || v === "x") ? v : "k");
+    }
+    cells.push(line);
+  }
+  var notes = {};
+  if (data && data.notes && typeof data.notes === "object"){
+    Object.keys(data.notes).forEach(function(k){ notes[String(k)] = String(data.notes[k]); });
+  }
+  return { rows: rows, cols: cols, cells: cells, notes: notes };
+}
+
+function readChartGrid(blob, hints){
+  return sample.json(chartGridPrompt(hints), { images: blob, modelTier: "complex", cache: false }).then(function(data){
+    return parseChartGrid(data, hints && hints.rows, hints && hints.cols);
+  });
+}
+
+function generateChartGrid(p, c){
+  if (!sample || !c.imageId) return;
+  var res = cloneChartsWithTarget(p, c.id);
+  if (!res.target) return;
+  var target = res.target;
+  p.charts = res.charts;
+  target._busy = true; target._error = null; render();
+  assetIdToBlob(c.imageId).then(function(blob){
+    return readChartGrid(blob, { rows: c.totalRows, cols: c.cols, name: c.name });
+  }).then(function(grid){
+    target._busy = false;
+    target.grid = grid;
+    target.totalRows = grid.rows;
+    target.cols = grid.cols;
+    if (!target.currentRow) target.currentRow = 1;
+    persistCharts(p);
+    render();
+  }).catch(function(err){
+    console.error(err);
+    target._busy = false;
+    var raw = (err && err.code) ? (err.code + (err.message ? " — " + err.message : "")) : (err && err.message ? err.message : String(err));
+    target._error = sampleErrorMessage(err) + " (" + raw + ") Réessaie, ou continue avec le compteur simple.";
+    render();
+  });
+}
+
+// ---------- CHARTS FOUND INSIDE AN IMPORTED PDF ----------
+// 1) render every page small and ask Claude which ones hold a knitting chart
+//    (and roughly where on the page), 2) re-render those pages large, crop to
+//    the chart, store the picture and read it cell by cell.
+function renderPageCanvas(pdf, pageNum, targetWidth){
+  return pdf.getPage(pageNum).then(function(page){
+    var base = page.getViewport({ scale: 1 });
+    var vp = page.getViewport({ scale: targetWidth / base.width });
+    var canvas = document.createElement("canvas");
+    canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    return page.render({ canvasContext: ctx, viewport: vp }).promise.then(function(){ return canvas; });
+  });
+}
+
+function canvasToBlob(canvas, quality){
+  return new Promise(function(resolve, reject){
+    canvas.toBlob(function(b){ if (b) resolve(b); else reject(new Error("toBlob a échoué")); }, "image/jpeg", quality || 0.85);
+  });
+}
+
+function normBox(box){
+  if (!Array.isArray(box) || box.length !== 4) return null;
+  var b = box.map(Number);
+  if (!b.every(isFinite)) return null;
+  if (b.some(function(v){ return v > 1.5; })) b = b.map(function(v){ return v / 100; });
+  var x0 = Math.min(b[0], b[2]), x1 = Math.max(b[0], b[2]), y0 = Math.min(b[1], b[3]), y1 = Math.max(b[1], b[3]);
+  if (x1 - x0 < 0.08 || y1 - y0 < 0.05) return null;
+  return [x0, y0, x1, y1];
+}
+
+function cropCanvas(src, box){
+  if (!box) return src;
+  var m = 0.03;
+  var x0 = Math.max(0, box[0] - m), y0 = Math.max(0, box[1] - m), x1 = Math.min(1, box[2] + m), y1 = Math.min(1, box[3] + m);
+  var w = Math.round((x1 - x0) * src.width), h = Math.round((y1 - y0) * src.height);
+  var c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  c.getContext("2d").drawImage(src, Math.round(x0 * src.width), Math.round(y0 * src.height), w, h, 0, 0, w, h);
+  return c;
+}
+
+function detectAndReadCharts(w, onProgress){
+  var pdf = w.pdfDoc;
+  onProgress = onProgress || function(){};
+  if (!sample || !pdf || typeof sample.limits !== "function") return Promise.resolve([]);
+  return sample.limits().catch(function(){ return null; }).then(function(lim){
+    if (!lim || !lim.images) return [];
+    var per = Math.max(1, Math.min(lim.images.maxCount || 1, 8));
+    var total = Math.min(pdf.numPages, 24);
+    var batches = [];
+    for (var start = 1; start <= total; start += per){
+      var b = [];
+      for (var n = start; n < start + per && n <= total; n++) b.push(n);
+      batches.push(b);
+    }
+    var found = [];
+    onProgress("Recherche de grilles dans le PDF...");
+    return batches.reduce(function(chain, batch){
+      return chain.then(function(){
+        return Promise.all(batch.map(function(n){
+          return renderPageCanvas(pdf, n, 900).then(function(cv){ return canvasToBlob(cv, 0.75); });
+        })).then(function(blobs){
+          var prompt = "Voici " + batch.length + " page(s) d'un patron de tricot (image 1 = page " + batch[0] + " du PDF, image 2 = page suivante, etc.). "
+            + "Repère chaque GRILLE de tricot : un diagramme quadrillé où chaque case représente une maille, avec des symboles et des numéros de rangs "
+            + "(grille de torsade, de jacquard, de dentelle, de point fantaisie...). Ignore les schémas de mesures, les silhouettes, les photos et les tableaux de tailles. "
+            + "Pour chaque grille trouvée, donne : image (numéro de l'image, 1 = la première envoyée), name (le nom ou titre indiqué près de la grille, sinon un nom court descriptif), "
+            + "rows (nombre de rangs de la grille si lisible, sinon null), cols (nombre de mailles de large si lisible, sinon null), "
+            + "box ([gauche, haut, droite, bas] : position de la grille dans la page en fractions de 0 à 1, numéros de rangs et de colonnes inclus, sans la légende).\n\n"
+            + "Réponds uniquement avec un JSON de cette forme exacte : {\"charts\": [{\"image\": number, \"name\": string, \"rows\": number|null, \"cols\": number|null, \"box\": [number, number, number, number]}]}. "
+            + "S'il n'y a aucune grille, réponds {\"charts\": []}.";
+          return sample.json(prompt, { images: blobs, modelTier: "default" });
+        }).then(function(res){
+          var list = (res && Array.isArray(res.charts)) ? res.charts : [];
+          list.forEach(function(ch){
+            var k = parseInt(ch && ch.image, 10);
+            if (!k || k < 1 || k > batch.length) return;
+            found.push({ page: batch[k - 1], name: String((ch && ch.name) || "").slice(0, 80), rows: parseInt(ch.rows, 10) || null, cols: parseInt(ch.cols, 10) || null, box: normBox(ch.box) });
+          });
+        }).catch(function(err){ console.error("chart detection failed", err); });
+      });
+    }, Promise.resolve()).then(function(){
+      found = found.slice(0, 6);
+      var out = [];
+      return found.reduce(function(chain, f, idx){
+        return chain.then(function(){
+          onProgress("Lecture de la grille " + (idx + 1) + " / " + found.length + (f.name ? " : " + f.name : "") + "... (peut prendre 1 à 2 min)");
+          return renderPageCanvas(pdf, f.page, 2000).then(function(cv){
+            return canvasToBlob(cropCanvas(cv, f.box), 0.9);
+          }).then(function(blob){
+            var upload = assets
+              ? assets.upload(blob).then(function(r){ return r.id; }).catch(function(e){ console.error("chart upload failed", e); return null; })
+              : Promise.resolve(null);
+            var read = readChartGrid(blob, { rows: f.rows, cols: f.cols, name: f.name }).catch(function(e){ console.error("chart read failed", e); return null; });
+            return Promise.all([upload, read]);
+          }).then(function(r){
+            var imageId = r[0], grid = r[1];
+            if (!imageId && !grid) return;
+            out.push({ id: newChartId(), name: f.name || ("Grille " + (idx + 1)), imageId: imageId || null,
+              totalRows: grid ? grid.rows : (f.rows || 1), cols: grid ? grid.cols : (f.cols || 18),
+              currentRow: 1, grid: grid, pdfPage: f.page });
+          }).catch(function(e){ console.error("chart extraction failed", e); });
+        });
+      }, Promise.resolve()).then(function(){ return out; });
+    });
+  }).catch(function(err){ console.error("charts", err); return []; });
+}
+
+function attachPdfCharts(w, projectId){
+  w.projectId = projectId;
+  state.chartsPending = state.chartsPending || {};
+  state.chartsPending[projectId] = w.chartNote || "Recherche de grilles dans le PDF...";
+  render();
+  w.chartsPromise.then(function(found){
+    delete state.chartsPending[projectId];
+    if (!found || !found.length){
+      if (state.activePanel !== "edit") render();
+      return;
+    }
+    var ref = db.collection("projects").doc(projectId);
+    var live = (state.currentDoc && state.currentDoc.id === projectId) ? state.currentDoc : null;
+    var existingP = live ? Promise.resolve(live.charts || []) : ref.get().then(function(snap){ return (snap.exists && snap.data().charts) || []; });
+    existingP.then(function(existing){
+      var charts = existing.concat(found);
+      if (state.currentDoc && state.currentDoc.id === projectId) state.currentDoc.charts = charts;
+      state.chartsFound = state.chartsFound || {};
+      state.chartsFound[projectId] = found.length;
+      if (state.activePanel !== "edit") render();
+      queueWrite(function(){ return ref.update({ charts: charts, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
+    });
+  });
+}
+
+function renderChartDraftForm(){
+  var d = state.chartDraft;
+  return el("div", {class:"section-edit"}, [
+    el("label", {class:"field-label"}, ["Nom de la grille"]),
+    el("input", {type:"text", value: d.name, oninput:function(e){ d.name = e.target.value; }}),
+    el("label", {class:"field-label"}, ["Photo ou export de la grille"]),
+    el("input", {type:"file", accept:"image/*", onchange:function(e){ d.file = e.target.files && e.target.files[0]; render(); }}),
+    d.file ? el("img", {src: URL.createObjectURL(d.file), style:"max-width:100%;border-radius:10px;border:1px solid var(--line);"}) : null,
+    el("div", {style:"display:flex;gap:8px;"}, [
+      el("div", {style:"flex:1;"}, [
+        el("label", {class:"field-label"}, ["Rangs de la répétition"]),
+        el("input", {type:"number", min:"1", value: d.totalRows, oninput:function(e){ d.totalRows = e.target.value; }})
+      ]),
+      el("div", {style:"flex:1;"}, [
+        el("label", {class:"field-label"}, ["Mailles de large"]),
+        el("input", {type:"number", min:"1", value: d.cols, oninput:function(e){ d.cols = e.target.value; }})
+      ])
+    ]),
+    d.error ? el("div", {class:"error-banner"}, [el("div", {}, [d.error])]) : null,
+    el("div", {style:"display:flex;gap:8px;"}, [
+      el("button", {class:"btn btn-primary btn-sm", disabled: d.busy, onclick:function(){ saveChartDraft(); }}, ["Enregistrer"]),
+      el("button", {class:"btn btn-ghost btn-sm", onclick:function(){ state.chartDraft = null; render(); }}, ["Annuler"])
+    ]),
+    el("div", {class:"small-note"}, ["Après enregistrement, tu pourras créer la grille (vide au départ) et taper sur chaque case en regardant la photo pour la remplir."])
+  ]);
+}
+
+function saveChartDraft(){
+  var d = state.chartDraft;
+  var p = state.currentDoc;
+  if (!d.name.trim()){ d.error = "Donne un nom à la grille."; render(); return; }
+  var totalRows = parseInt(d.totalRows, 10);
+  if (!totalRows || totalRows < 1){ d.error = "Indique un nombre de rangs valide."; render(); return; }
+  var cols = parseInt(d.cols, 10);
+  if (!cols || cols < 1){ d.error = "Indique le nombre de mailles de large de la grille."; render(); return; }
+  d.busy = true; d.error = null; render();
+  function finalize(imageId, imageData){
+    var chart = { id: newChartId(), name: d.name.trim(), imageId: imageId || null, totalRows: totalRows, cols: cols, currentRow: 1, grid: null };
+    if (imageData) chart.imageData = imageData;
+    var charts = (p.charts || []).concat([chart]);
+    p.charts = charts;
+    var ref = currentRef();
+    if (ref) queueWrite(function(){ return ref.update({ charts: charts, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
+    d.busy = false;
+    state.chartDraft = null;
+    render();
+  }
+  if (d.file && assets){
+    assets.upload(d.file).then(function(res){ finalize(res.id); }).catch(function(err){
+      console.error(err);
+      d.busy = false;
+      d.error = "Impossible d'importer l'image, réessaie.";
+      render();
+    });
+  } else if (d.file && LOCAL_MODE){
+    fileToDataUrl(d.file, 1800).then(function(du){ finalize(null, du); }).catch(function(err){
+      console.error(err);
+      d.busy = false;
+      d.error = "Impossible de lire l'image, réessaie.";
+      render();
+    });
+  } else {
+    finalize(null);
+  }
+}
+
+function createBlankGrid(p, c){
+  var rows = c.totalRows || 1;
+  var cols = c.cols || 18;
+  var cells = [];
+  for (var r = 0; r < rows; r++){
+    var line = [];
+    for (var col = 0; col < cols; col++) line.push("k");
+    cells.push(line);
+  }
+  var res = cloneChartsWithTarget(p, c.id);
+  if (!res.target) return;
+  res.target.grid = { rows: rows, cols: cols, cells: cells, notes: {} };
+  res.target.currentRow = res.target.currentRow || 1;
+  p.charts = res.charts;
+  state.chartEditCells = c.id; // jump straight into correction mode so tapping cells starts right away
+  persistCharts(p);
+  render();
+}
+
+function removeChart(p, id){
+  state.confirmDeleteChart = null;
+  var charts = (p.charts || []).filter(function(c){ return c.id !== id; });
+  p.charts = charts;
+  render();
+  var ref = currentRef();
+  if (ref) queueWrite(function(){ return ref.update({ charts: charts, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
+}
+
+// ---------- EXPORT / IMPORT ----------
+// A project travels as one JSON file. Pictures (cover, chart photos) ride
+// inside it as JPEG data URLs so the standalone app gets them too.
+function slugify(t){
+  return String(t || "patron").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "patron";
+}
+
+function imageToDataUrl(src, maxW){
+  return new Promise(function(resolve, reject){
+    var img = new Image();
+    img.onload = function(){
+      try{
+        var nw = img.naturalWidth || maxW, nh = img.naturalHeight || maxW;
+        var scale = Math.min(1, maxW / nw);
+        var c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(nw * scale)); c.height = Math.max(1, Math.round(nh * scale));
+        var ctx = c.getContext("2d");
+        ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL("image/jpeg", 0.85));
+      } catch(e){ reject(e); }
+    };
+    img.onerror = function(){ reject(new Error("image illisible")); };
+    img.src = src;
+  });
+}
+
+function fileToDataUrl(file, maxW){
+  var url = URL.createObjectURL(file);
+  return imageToDataUrl(url, maxW).then(function(du){ URL.revokeObjectURL(url); return du; },
+    function(e){ URL.revokeObjectURL(url); throw e; });
+}
+
+function assetToDataUrl(imageId, maxW){
+  return imageToDataUrl("/_blob/" + imageId, maxW).catch(function(e){ console.error("asset read failed", e); return null; });
+}
+
+function dataUrlToBlob(du){
+  var comma = du.indexOf(",");
+  var mime = (du.slice(0, comma).match(/data:([^;,]+)/) || [])[1] || "image/jpeg";
+  var bin = atob(du.slice(comma + 1));
+  var arr = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+
+function isImageDataUrl(v){ return typeof v === "string" && /^data:image\/(jpeg|png|webp|gif);base64,/.test(v); }
+
+// Put an imported picture where this version keeps pictures: the asset store
+// on claude.ai, inline in the project on the standalone app.
+function storeImportedImage(du){
+  if (!isImageDataUrl(du)) return Promise.resolve({});
+  if (assets){
+    return assets.upload(dataUrlToBlob(du)).then(function(r){ return { imageId: r.id }; })
+      .catch(function(e){ console.error("image upload failed", e); return {}; });
+  }
+  if (LOCAL_MODE) return Promise.resolve({ imageData: du });
+  return Promise.resolve({});
+}
+
+function exportProject(p){
+  if (!downloads || state.exportBusy) return;
+  state.exportBusy = true; render();
+  var charts = JSON.parse(JSON.stringify(p.charts || []));
+  var imgJobs = charts.map(function(c){
+    if (isImageDataUrl(c.imageData)) return Promise.resolve(c.imageData);
+    return c.imageId ? assetToDataUrl(c.imageId, 1800) : Promise.resolve(null);
+  });
+  var coverJob = isImageDataUrl(p.coverData) ? Promise.resolve(p.coverData)
+    : (p.coverImageId ? assetToDataUrl(p.coverImageId, 600) : Promise.resolve(null));
+  Promise.all([Promise.all(imgJobs), coverJob]).then(function(r){
+    var chartImgs = r[0], cover = r[1];
+    charts.forEach(function(c, k){
+      delete c.imageId; delete c._busy; delete c._error; delete c.imageData;
+      if (chartImgs[k]) c.imageData = chartImgs[k];
+    });
+    var project = {
+      title: p.title || "Mon patron",
+      sizes: p.sizes || [],
+      sizeIndex: p.sizeIndex || 0,
+      rawText: p.rawText || "",
+      sections: JSON.parse(JSON.stringify(p.sections || [])),
+      progress: p.progress || { flatIndex: 0, tally: 0, row: 1 },
+      reference: p.reference || null,
+      charts: charts
+    };
+    if (cover) project.coverData = cover;
+    var payload = { format: "patron-tricot", version: 2, exportedAt: new Date().toISOString(), project: project };
+    state.exportBusy = false; render();
+    return downloads.save({ filename: slugify(p.title) + ".json", data: JSON.stringify(payload) });
+  }).catch(function(err){
+    state.exportBusy = false;
+    if (err && err.code === "declined") { render(); return; }
+    console.error(err);
+    state.error = "Impossible d'exporter le projet (" + ((err && err.code) || "erreur") + ").";
+    render();
+  });
+}
+
+function pickJsonFile(onFile){
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = ".json,application/json"; inp.style.display = "none";
+  inp.onchange = function(){ var f = inp.files && inp.files[0]; inp.remove(); if (f) onFile(f); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
+function importProjectFromFile(file){
+  if (!db) return;
+  state.importMsg = null;
+  var reader = new FileReader();
+  reader.onerror = function(){ state.importMsg = { ok:false, text:"Impossible de lire ce fichier." }; render(); };
+  reader.onload = function(){
+    var data;
+    try { data = JSON.parse(reader.result); } catch(e){ data = null; }
+    var pr = data && data.format === "patron-tricot" && data.project;
+    if (!pr || !Array.isArray(pr.sections)){
+      state.importMsg = { ok:false, text:"Ce fichier n'est pas un projet exporté depuis Patron Tricot." };
+      render();
+      return;
+    }
+    var sections = pr.sections.map(function(sec){
+      return {
+        name: String((sec && sec.name) || "Section"),
+        steps: ((sec && sec.steps) || []).map(function(st){
+          return {
+            text: String((st && st.text) || ""),
+            repeatCount: (st && typeof st.repeatCount === "number") ? st.repeatCount : null,
+            rowsPerRepeat: (st && typeof st.rowsPerRepeat === "number") ? st.rowsPerRepeat : null
+          };
+        })
+      };
+    });
+    var rawCharts = (Array.isArray(pr.charts) ? pr.charts : []).filter(function(c){ return c && typeof c === "object"; });
+    state.importMsg = { ok:true, text:"Import en cours..." };
+    render();
+    var chartJobs = rawCharts.map(function(c){
+      var copy = JSON.parse(JSON.stringify(c));
+      var du = copy.imageData;
+      delete copy.imageId; delete copy.imageData; delete copy._busy; delete copy._error;
+      if (!copy.id) copy.id = newChartId();
+      return storeImportedImage(du).then(function(img){ return Object.assign(copy, img); });
+    });
+    var coverJob = storeImportedImage(pr.coverData);
+    Promise.all([Promise.all(chartJobs), coverJob]).then(function(r){
+      var charts = r[0], cover = r[1];
+      var now = new Date().toISOString();
+      var docData = {
+        title: String(pr.title || "Patron importé"),
+        sizes: Array.isArray(pr.sizes) ? pr.sizes.map(String) : [],
+        sizeIndex: parseInt(pr.sizeIndex, 10) || 0,
+        rawText: String(pr.rawText || ""),
+        sections: sections,
+        progress: pr.progress && typeof pr.progress === "object" ? pr.progress : { flatIndex: 0, tally: 0, row: 1 },
+        charts: charts,
+        createdAt: now,
+        updatedAt: now
+      };
+      if (pr.reference && typeof pr.reference === "object") docData.reference = pr.reference;
+      if (cover.imageId) docData.coverImageId = cover.imageId;
+      if (cover.imageData) docData.coverData = cover.imageData;
+      return withTimeout(db.collection("projects").add(docData), 20000).then(function(ref){
+        state.importMsg = null;
+        openProject(ref.id, Object.assign({}, docData, { id: ref.id }));
+      });
+    }).catch(function(err){
+      console.error(err);
+      state.importMsg = { ok:false, text:"Impossible d'enregistrer le projet importé." };
+      render();
+    });
+  };
+  reader.readAsText(file);
+}
+
+// ---------- MANUAL EDITOR ----------
+function renderEditor(p){
+  var box = el("div", {style:"display:flex;flex-direction:column;gap:12px;"}, []);
+  (p.sections||[]).forEach(function(sec, si){
+    var secBox = el("div", {class:"section-edit"}, []);
+    secBox.appendChild(el("div", {class:"section-edit-head"}, [
+      el("input", {type:"text", value: sec.name||"", oninput:function(e){ updateSectionField(si, "name", e.target.value); }}),
+      el("button", {class:"icon-btn", onclick:function(){ removeSection(si); }}, ["✕"])
+    ]));
+    (sec.steps||[]).forEach(function(st, sti){
+      secBox.appendChild(el("div", {class:"step-edit-row"}, [
+        el("textarea", {rows:"2", oninput:function(e){ updateStepField(si, sti, "text", e.target.value); }}, [st.text||""]),
+        el("div", {class:"row2"}, [
+          el("span", {class:"small-note"}, ["Rangs par répétition :"]),
+          el("input", {type:"number", min:"0", value: st.rowsPerRepeat||"", placeholder:"— (ex: 8)",
+            title:"Si cette étape regroupe un bloc de plusieurs rangs numérotés qui se répète (ex: « rangs 1 à 8 »), indique combien de rangs compte le bloc — un compteur de rang dédié apparaîtra, qui fait avancer les répétitions automatiquement.",
+            oninput:function(e){
+              var v = e.target.value === "" ? null : parseInt(e.target.value, 10);
+              updateStepField(si, sti, "rowsPerRepeat", isNaN(v) ? null : v);
+            }})
+        ]),
+        el("div", {class:"row2"}, [
+          el("span", {class:"small-note"}, ["Répétitions :"]),
+          el("input", {type:"number", min:"0", value: st.repeatCount||"", placeholder:"—", oninput:function(e){
+            var v = e.target.value === "" ? null : parseInt(e.target.value, 10);
+            updateStepField(si, sti, "repeatCount", isNaN(v) ? null : v);
+          }}),
+          el("span", {style:"flex:1;"}),
+          el("button", {class:"icon-btn", onclick:function(){ removeStep(si, sti); }}, ["✕"])
+        ])
+      ]));
+    });
+    secBox.appendChild(el("button", {class:"link-btn", onclick:function(){ addStep(si); }}, ["+ Ajouter une étape"]));
+    box.appendChild(secBox);
+  });
+  box.appendChild(el("button", {class:"btn btn-ghost btn-sm", onclick: addSection}, ["+ Ajouter une section"]));
+  return box;
+}
+
+function cloneSections(p){
+  return JSON.parse(JSON.stringify(p.sections || []));
+}
+
+function commitSections(sections){
+  var ref = currentRef();
+  if (!ref) return;
+  queueWrite(function(){ return ref.update({ sections: sections, updatedAt: new Date().toISOString() }); });
+}
+
+function updateSectionField(si, field, val){
+  var p = state.currentDoc; if (!p) return;
+  var sections = cloneSections(p);
+  if (!sections[si]) return;
+  sections[si][field] = val;
+  p.sections = sections;
+  commitSections(sections);
+}
+function updateStepField(si, sti, field, val){
+  var p = state.currentDoc; if (!p) return;
+  var sections = cloneSections(p);
+  if (!sections[si] || !sections[si].steps[sti]) return;
+  sections[si].steps[sti][field] = val;
+  p.sections = sections;
+  commitSections(sections);
+}
+function addStep(si){
+  var p = state.currentDoc; if (!p) return;
+  var sections = cloneSections(p);
+  sections[si].steps.push({ text:"Nouvelle étape", repeatCount:null, rowsPerRepeat:null });
+  p.sections = sections;
+  commitSections(sections);
+  render();
+}
+function removeStep(si, sti){
+  var p = state.currentDoc; if (!p) return;
+  var sections = cloneSections(p);
+  sections[si].steps.splice(sti, 1);
+  p.sections = sections;
+  commitSections(sections);
+  render();
+}
+function addSection(){
+  var p = state.currentDoc; if (!p) return;
+  var sections = cloneSections(p);
+  sections.push({ name:"Nouvelle section", steps:[] });
+  p.sections = sections;
+  commitSections(sections);
+  render();
+}
+function removeSection(si){
+  var p = state.currentDoc; if (!p) return;
+  var sections = cloneSections(p);
+  sections.splice(si, 1);
+  p.sections = sections;
+  commitSections(sections);
+  render();
+}
+
+
+// ---------- LOCAL STORAGE (replaces the claude.ai database) ----------
+// Same small API surface the app already uses: collection().get/add, doc().get/update/delete.
+function makeLocalDb(){
+  var dbPromise = null;
+  function open(){
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(function(resolve, reject){
+      var req = indexedDB.open("patron-tricot", 1);
+      req.onupgradeneeded = function(){ req.result.createObjectStore("projects", { keyPath: "id" }); };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ reject(req.error || new Error("IndexedDB indisponible")); };
+    });
+    return dbPromise;
+  }
+  function tx(mode, fn){
+    return open().then(function(d){
+      return new Promise(function(resolve, reject){
+        var t = d.transaction("projects", mode);
+        var store = t.objectStore("projects");
+        var out = fn(store);
+        t.oncomplete = function(){ resolve(out && out.result !== undefined ? out.result : out); };
+        t.onerror = function(){ reject(t.error); };
+        t.onabort = function(){ reject(t.error); };
+      });
+    });
+  }
+  function snap(id, data){
+    return { id: id, exists: !!data, data: function(){ if (!data) return undefined; var c = Object.assign({}, data); delete c.id; return c; } };
+  }
+  function docRef(id){
+    return {
+      id: id,
+      get: function(){ return tx("readonly", function(s){ return s.get(id); }).then(function(r){ return snap(id, r); }); },
+      update: function(patch){
+        return tx("readwrite", function(s){
+          var g = s.get(id);
+          g.onsuccess = function(){
+            if (!g.result) return;
+            s.put(Object.assign({}, g.result, patch, { id: id }));
+          };
+          return g;
+        }).then(function(){});
+      },
+      delete: function(){ return tx("readwrite", function(s){ return s.delete(id); }).then(function(){}); }
+    };
+  }
+  return {
+    collection: function(){
+      return {
+        get: function(){
+          return tx("readonly", function(s){ return s.getAll(); }).then(function(rows){
+            return { docs: (rows || []).map(function(r){ return snap(r.id, r); }) };
+          });
+        },
+        add: function(data){
+          var id = "p_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+          return tx("readwrite", function(s){ return s.put(Object.assign({}, data, { id: id })); }).then(function(){ return docRef(id); });
+        },
+        doc: docRef
+      };
+    }
+  };
+}
+
+// ---------- EXPORT FILE (replaces the claude.ai download prompt) ----------
+function makeDownloads(){
+  return {
+    save: function(req){
+      return new Promise(function(resolve, reject){
+        try {
+          var blob = new Blob([req.data], { type: "application/json" });
+          var file = new File([blob], req.filename, { type: "application/json" });
+          if (navigator.canShare && navigator.canShare({ files: [file] })){
+            navigator.share({ files: [file], title: req.filename }).then(function(){ resolve({ status: "saved" }); },
+              function(e){ if (e && e.name === "AbortError") reject({ code: "declined" }); else reject({ code: "unavailable" }); });
+            return;
+          }
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = req.filename;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+          resolve({ status: "saved" });
+        } catch(e){ reject({ code: "unavailable", message: String(e) }); }
+      });
+    }
+  };
+}
+
+// ---------- INIT ----------
+function withDeadline(promise, ms){
+  return new Promise(function(resolve){
+    var done = false;
+    var t = setTimeout(function(){ if (!done){ done = true; resolve(null); } }, ms);
+    promise.then(function(v){ if (!done){ done = true; clearTimeout(t); resolve(v); } },
+                 function(){ if (!done){ done = true; clearTimeout(t); resolve(null); } });
+  });
+}
+
+window.addEventListener("error", function(e){
+  state.error = "Erreur JS : " + (e && e.message ? e.message : "inconnue");
+  try { render(); } catch(e2){}
+});
+window.addEventListener("unhandledrejection", function(e){
+  var r = e && e.reason;
+  var msg = r && (r.message || r.code) ? (r.code ? r.code + " — " : "") + (r.message || "") : String(r);
+  state.error = "Erreur (promesse) : " + msg;
+  try { render(); } catch(e2){}
+});
+
+function init(){
+  db = makeLocalDb();
+  LOCAL_MODE = true;
+  sample = null;   // no AI import outside claude.ai
+  assets = null;   // pictures are kept inside each project instead
+  downloads = makeDownloads();
+  render();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){});
+  subscribeProjects();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function(e){ console.error("sw", e); });
+}
+
+init();
+})();
+</script>
+</body>
+</html>
