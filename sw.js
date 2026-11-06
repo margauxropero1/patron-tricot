@@ -1,6 +1,6 @@
 // Service worker : fait fonctionner l'app hors ligne.
 // Change le numéro de version quand tu mets à jour les fichiers.
-const CACHE = "patron-tricot-v6";
+const CACHE = "patron-tricot-v8";
 const CORE = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-512-maskable.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {

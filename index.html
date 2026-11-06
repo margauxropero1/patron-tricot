@@ -359,6 +359,8 @@ hr.sep{border:none;border-top:1px solid var(--line);margin:2px 0;}
 .chart-row{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;cursor:pointer;width:100%;box-sizing:border-box;}
 .chart-row.current{background:var(--accent-soft);}
 .chart-row.done{opacity:.4;}
+.chart-row.off{opacity:.18;cursor:default;}
+.chart-row.off .chart-rownum{text-decoration:line-through;}
 .chart-rownum{width:26px;flex:none;font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--ink-soft);text-align:right;}
 .chart-cells{display:flex;gap:1px;}
 .chart-note-dot{width:6px;height:6px;border-radius:50%;background:var(--highlight);flex:none;margin-left:2px;}
@@ -1109,7 +1111,7 @@ function renderProject(){
   } else if (state.chartsFound && state.chartsFound[p.id]){
     var nFound = state.chartsFound[p.id];
     main.appendChild(el("div", {class:"toggle-row card", style:"padding:10px 14px;gap:10px;"}, [
-      el("span", {class:"small-note", style:"color:var(--ink);"}, [nFound + (nFound > 1 ? " grilles trouvées" : " grille trouvée") + " dans le PDF."]),
+      el("span", {class:"small-note", style:"color:var(--ink);"}, [nFound.note]),
       el("div", {style:"display:flex;gap:10px;align-items:center;"}, [
         el("button", {class:"link-btn", onclick:function(){ delete state.chartsFound[p.id]; state.activePanel = "charts"; render(); }}, ["Voir"]),
         el("button", {class:"icon-btn", onclick:function(){ delete state.chartsFound[p.id]; render(); }}, ["✕"])
@@ -1187,6 +1189,8 @@ function renderProject(){
       stepCard.appendChild(rbox);
     }
     main.appendChild(stepCard);
+    var follow = renderChartFollow(p, cur);
+    if (follow) main.appendChild(follow);
   }
 
   if (downloads){
@@ -1448,6 +1452,7 @@ function applyChangeSize(){
       state.wizard = null;
       if (state.currentDoc) Object.assign(state.currentDoc, patch);
       render();
+      if (state.currentDoc && (state.currentDoc.charts || []).length) adjustAllChartsToSize(state.currentDoc);
     }).catch(function(err){
       console.error(err);
       state.wizard = null;
@@ -1529,6 +1534,18 @@ function newChartId(){ return "c_" + Date.now() + "_" + Math.random().toString(3
 function renderChartsPanel(p){
   var box = el("div", {style:"display:flex;flex-direction:column;gap:14px;"}, []);
   var charts = p.charts || [];
+  var pending = state.chartsPending && state.chartsPending[p.id];
+  if (pending){
+    box.appendChild(el("div", {class:"card", style:"display:flex;flex-direction:column;gap:4px;"}, [
+      el("div", {class:"step-busy", style:"padding:2px 0;"}, [spinner(), text(pending)]),
+      el("div", {class:"small-note"}, ["Laisse cette page ouverte pendant la lecture : si tu la fermes, la recherche s'arrête."])
+    ]));
+  } else if (sample || (p.chartScan && p.chartScan.note)){
+    box.appendChild(el("div", {class:"card", style:"display:flex;flex-direction:column;gap:6px;"}, [
+      (p.chartScan && p.chartScan.note) ? el("div", {class:"small-note", style:"color:var(--ink);"}, ["Dernière recherche : " + p.chartScan.note]) : null,
+      sample ? el("button", {class:"link-btn", style:"align-self:flex-start;", onclick:function(){ rescanChartsFromPdf(p); }}, ["Chercher les grilles dans le PDF du patron"]) : null
+    ]));
+  }
   if (!charts.length && !state.chartDraft){
     box.appendChild(el("div", {class:"step-card"}, [
       el("div", {class:"step-eyebrow"}, ["Grilles"]),
@@ -1570,6 +1587,7 @@ function renderChartCard(p, c){
     ]));
   }
 
+  body.push(renderChartSizeRow(p, c));
   var tr = activeTracker(c);
   body.push(renderTrackerPanel(p, c, tr));
 
@@ -1582,7 +1600,8 @@ function renderChartCard(p, c){
     body.push(el("div", {class:"toggle-row", style:"flex-wrap:wrap;gap:4px 14px;"}, [
       el("button", {class:"link-btn", onclick:function(){ state.chartEditCells = (state.chartEditCells===c.id) ? null : c.id; render(); }}, [state.chartEditCells===c.id ? "Terminer la correction" : "Corriger la grille"]),
       chartImgSrc ? el("button", {class:"link-btn", onclick:function(){ state.showChartPhoto = (state.showChartPhoto === c.id) ? null : c.id; render(); }}, [state.showChartPhoto === c.id ? "Masquer la photo" : "Voir la photo"]) : null,
-      sample && c.imageId ? el("button", {class:"link-btn", onclick:function(){ generateChartGrid(p, c); }}, [c._busy ? "Régénération..." : "Régénérer avec l'IA"]) : null
+      sample && c.imageId ? el("button", {class:"link-btn", onclick:function(){ generateChartGrid(p, c); }}, [c._busy ? "Régénération..." : "Régénérer avec l'IA"]) : null,
+      sample && c.imageId && p.rawText ? el("button", {class:"link-btn", disabled: !!c._notesBusy, onclick:function(){ regenerateChartNotes(p, c); }}, [c._notesBusy ? "Explications en cours..." : "Refaire les explications depuis le patron"]) : null
     ]));
   } else {
     body.push(chartImgSrc ? el("img", {src: chartImgSrc, style:"width:100%;border-radius:10px;border:1px solid var(--line);"}) : null);
@@ -1594,6 +1613,86 @@ function renderChartCard(p, c){
   if (c._error) body.push(el("div", {class:"error-banner"}, [el("div", {}, [c._error])]));
 
   return el("div", {class:"step-card"}, [head].concat(body));
+}
+
+// ---------- CHART HEIGHT PER SIZE ----------
+// Many charts repeat over a different number of rows depending on the size
+// ("18 sts x 52 (52) 54 (54) 56 (56) rows"). repeatRows is that height for
+// the project's size; trackers wrap on it instead of the drawn height.
+function chartRepeat(c){
+  var r = parseInt(c && c.repeatRows, 10);
+  if (r && r > 0) return r;
+  return (c && (c.totalRows || (c.grid && c.grid.rows))) || 1;
+}
+
+function sizeHints(sizes, idx){
+  sizes = Array.isArray(sizes) ? sizes : [];
+  idx = parseInt(idx, 10) || 0;
+  return { label: sizes[idx] || "Taille unique", index: idx, count: sizes.length };
+}
+
+function setChartRepeat(p, chartId, n, note){
+  var res = cloneChartsWithTarget(p, chartId);
+  if (!res.target) return;
+  res.target.repeatRows = n;
+  if (note !== undefined) res.target.repeatNote = note;
+  p.charts = res.charts;
+  persistCharts(p);
+  render();
+}
+
+function adjustChartToSize(p, c){
+  if (!sample) return Promise.resolve();
+  state.sizeBusy = state.sizeBusy || {};
+  state.sizeBusy[c.id] = true; render();
+  var sz = sizeHints(p.sizes, p.sizeIndex);
+  var imgP = c.imageId ? assetIdToBlob(c.imageId).catch(function(){ return null; })
+    : Promise.resolve(isImageDataUrl(c.imageData) ? dataUrlToBlob(c.imageData) : null);
+  return imgP.then(function(blob){
+    var drawn = (c.grid && c.grid.rows) || c.totalRows || "?";
+    var prompt = "Grille de tricot « " + (c.name || "Grille") + " » (" + drawn + " rangs dessinés). La tricoteuse fait la taille « " + sz.label + " »"
+      + (sz.count > 1 ? " (position " + (sz.index + 1) + " sur " + sz.count + " dans les séquences de nombres entre parenthèses du patron, ex : 52 (52) 54 (54) 56 (56))" : "") + ". "
+      + "D'après le texte du patron" + (blob ? " et l'image de la grille (repères de taille éventuels dessinés sur la grille)" : "")
+      + ", sur combien de rangs se répète cette grille pour CETTE taille ? Si la hauteur ne dépend pas de la taille, donne la hauteur de la répétition. "
+      + "Réponds uniquement avec un JSON : {\"repeatRows\": number, \"explanation\": string} — explanation : une phrase courte qui cite le passage du patron utilisé."
+      + patternTextForCharts(p.rawText);
+    var opts = { modelTier: "default" };
+    if (blob) opts.images = blob;
+    return sample.json(prompt, opts);
+  }).then(function(d){
+    delete state.sizeBusy[c.id];
+    var n = parseInt(d && d.repeatRows, 10);
+    if (n > 0 && n <= 1000) setChartRepeat(p, c.id, n, String((d && d.explanation) || "").slice(0, 300));
+    else { state.error = "Claude n'a pas trouvé la hauteur de « " + (c.name || "la grille") + " » pour ta taille : indique-la à la main dans Grilles."; render(); }
+  }).catch(function(err){
+    console.error(err);
+    delete state.sizeBusy[c.id];
+    state.error = sampleErrorMessage(err) + " (hauteur de grille pour ta taille)";
+    render();
+  });
+}
+
+function adjustAllChartsToSize(p){
+  return (p.charts || []).reduce(function(chain, c){
+    return chain.then(function(){ return adjustChartToSize(p, c); });
+  }, Promise.resolve());
+}
+
+function renderChartSizeRow(p, c){
+  var sz = sizeHints(p.sizes, p.sizeIndex);
+  var busy = state.sizeBusy && state.sizeBusy[c.id];
+  var drawn = (c.grid && c.grid.rows) || c.totalRows;
+  return el("div", {class:"reading-box", style:"display:flex;flex-direction:column;gap:6px;padding:10px 12px;"}, [
+    el("div", {style:"display:flex;align-items:center;gap:8px;flex-wrap:wrap;"}, [
+      el("span", {class:"small-note", style:"color:var(--ink);"}, ["Répétition pour la taille " + sz.label + " :"]),
+      el("input", {type:"number", min:"1", value: chartRepeat(c), style:"width:72px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:14px;",
+        onchange:function(e){ var v = parseInt(e.target.value, 10); if (v > 0) setChartRepeat(p, c.id, v, ""); }}),
+      el("span", {class:"small-note"}, ["rangs" + (drawn && drawn !== chartRepeat(c) ? " (grille dessinée : " + drawn + ")" : "")])
+    ]),
+    c.repeatNote ? el("div", {class:"small-note"}, [c.repeatNote]) : null,
+    (sample && (p.rawText || c.imageId)) ? el("button", {class:"link-btn", style:"align-self:flex-start;padding:0;", disabled: !!busy, onclick:function(){ adjustChartToSize(p, c); }},
+      [busy ? "Recherche de la hauteur pour ta taille..." : "Trouver la hauteur pour ma taille dans le patron"]) : null
+  ]);
 }
 
 // ---------- CHART TRACKERS ----------
@@ -1637,14 +1736,14 @@ function setTrackerPosition(t, total, row, repeat){
 function stepTracker(p, c, trackerId, delta){
   mutateChart(p, c.id, function(ch){
     var t = findTracker(ch, trackerId); if (!t) return;
-    setTrackerPosition(t, ch.totalRows || 1, (t.row || 1) + delta, t.repeat || 1);
+    setTrackerPosition(t, chartRepeat(ch), (t.row || 1) + delta, t.repeat || 1);
   });
 }
 
 function markRowDone(p, c, trackerId, r){
   mutateChart(p, c.id, function(ch){
     var t = findTracker(ch, trackerId); if (!t) return;
-    setTrackerPosition(t, ch.totalRows || 1, r + 1, t.repeat || 1);
+    setTrackerPosition(t, chartRepeat(ch), r + 1, t.repeat || 1);
   });
 }
 
@@ -1692,7 +1791,7 @@ function rowsLeft(t, total){
 
 function renderTrackerPanel(p, c, tr){
   var trackers = getTrackers(c);
-  var total = c.totalRows || 1;
+  var total = chartRepeat(c);
   var box = el("div", {class:"repeat-box"}, []);
 
   if (trackers.length > 1 || state.newTracker === c.id){
@@ -1761,10 +1860,121 @@ function renderTrackerPanel(p, c, tr){
       numInput("Objectif : rang", tr.targetRow, function(v){ updateTracker(p, c, tr.id, { targetRow: v }); }),
       numInput("de la répétition", tr.targetRepeat, function(v){ updateTracker(p, c, tr.id, { targetRepeat: v }); })
     ]));
+    var secNames = (p.sections || []).map(function(sec){ return sec.name || ""; }).filter(function(n, k, arr){ return n && arr.indexOf(n) === k; });
+    if (secNames.length){
+      var linked = tr.sections || [];
+      box.appendChild(el("div", {}, [
+        el("label", {class:"field-label"}, ["Sections du patron suivies par ce repère"]),
+        el("div", {class:"tool-bar"}, secNames.map(function(n){
+          var on = linked.indexOf(n) >= 0;
+          return el("button", {class:"tool-chip" + (on ? " active" : ""), onclick:function(){ toggleTrackerSection(p, c, tr.id, n); }}, [on ? n + " ✓" : n]);
+        })),
+        el("div", {class:"small-note", style:"margin-top:6px;"}, ["Quand tu tricotes une étape de ces sections, ce repère s'affiche directement sous l'étape, à l'endroit où tu t'étais arrêtée."])
+      ]));
+    }
     if (trackers.length > 1){
       box.appendChild(el("button", {class:"link-btn", style:"color:var(--danger);align-self:flex-start;", onclick:function(){ state.trackerSettings = null; removeTracker(p, c, tr.id); }}, ["Supprimer ce repère"]));
     }
   }
+  return box;
+}
+
+// ---------- CHART FOLLOWS THE PATTERN ----------
+// A tracker can be tied to pattern sections (by name). While the knitter is
+// on a step of such a section, that tracker is shown right under the step,
+// so each part (body, sleeves...) keeps and resumes its own place in the chart.
+function linkedTrackers(p, secName){
+  var out = [];
+  if (!secName) return out;
+  (p.charts || []).forEach(function(c){
+    getTrackers(c).forEach(function(t){ if ((t.sections || []).indexOf(secName) >= 0) out.push({ c: c, t: t }); });
+  });
+  return out;
+}
+
+function toggleTrackerSection(p, c, trackerId, secName){
+  mutateChart(p, c.id, function(ch){
+    var t = findTracker(ch, trackerId); if (!t) return;
+    var on = (t.sections || []).indexOf(secName) >= 0;
+    // one tracker per chart for a given section
+    ch.trackers.forEach(function(o){ o.sections = (o.sections || []).filter(function(n){ return n !== secName; }); });
+    if (!on) t.sections = t.sections.concat([secName]);
+  });
+}
+
+function newTrackerForSection(p, c, secName){
+  var id = "t_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+  mutateChart(p, c.id, function(ch){
+    ch.trackers.forEach(function(o){ o.sections = (o.sections || []).filter(function(n){ return n !== secName; }); });
+    ch.trackers.push({ id: id, name: secName, row: 1, repeat: 1, targetRepeat: null, targetRow: null, note: "", sections: [secName] });
+  });
+}
+
+function renderChartFollow(p, cur){
+  var charts = p.charts || [];
+  if (!charts.length || !cur) return null;
+  var secName = cur.sectionName || "";
+  var wrap = el("div", {style:"display:flex;flex-direction:column;gap:12px;"}, []);
+  linkedTrackers(p, secName).forEach(function(lt){ wrap.appendChild(renderFollowBox(p, lt.c, lt.t, secName)); });
+
+  var picking = state.linkPicker === secName;
+  if (!secName) return wrap.childNodes.length ? wrap : null;
+  if (!picking){
+    wrap.appendChild(el("button", {class:"link-btn", style:"align-self:flex-start;", onclick:function(){ state.linkPicker = secName; render(); }},
+      [wrap.childNodes.length ? "Suivre une autre grille dans « " + secName + " »" : "Suivre une grille dans « " + secName + " »"]));
+  } else {
+    var choices = el("div", {class:"card", style:"display:flex;flex-direction:column;gap:8px;"}, [
+      el("div", {class:"small-note", style:"color:var(--ink);"}, ["Quel repère suivre pendant « " + secName + " » ? Il reprendra toujours là où tu t'étais arrêtée."])
+    ]);
+    charts.forEach(function(c){
+      var opts = getTrackers(c).map(function(t){
+        var on = (t.sections || []).indexOf(secName) >= 0;
+        return el("button", {class:"tool-chip" + (on ? " active" : ""), onclick:function(){ state.linkPicker = null; if (!on) toggleTrackerSection(p, c, t.id, secName); else render(); }},
+          [t.name + " · R" + (t.row || 1) + " rép." + (t.repeat || 1)]);
+      });
+      opts.push(el("button", {class:"tool-chip", onclick:function(){ state.linkPicker = null; newTrackerForSection(p, c, secName); }}, ["+ Nouveau repère « " + secName + " » (rang 1)"]));
+      choices.appendChild(el("div", {}, [
+        el("div", {class:"step-eyebrow", style:"margin-bottom:6px;"}, [c.name || "Grille"]),
+        el("div", {class:"tool-bar"}, opts)
+      ]));
+    });
+    choices.appendChild(el("button", {class:"link-btn", style:"align-self:flex-start;", onclick:function(){ state.linkPicker = null; render(); }}, ["Annuler"]));
+    wrap.appendChild(choices);
+  }
+  return wrap;
+}
+
+function renderFollowBox(p, c, tr, secName){
+  var total = chartRepeat(c);
+  var r = tr.row || 1;
+  var box = el("div", {class:"repeat-box"}, []);
+  box.appendChild(el("div", {class:"toggle-row"}, [
+    el("div", {class:"label"}, [(c.name || "Grille") + " · " + tr.name]),
+    el("button", {class:"icon-btn", title:"Ne plus suivre cette grille dans « " + secName + " »", onclick:function(){ toggleTrackerSection(p, c, tr.id, secName); }}, ["✕"])
+  ]));
+  box.appendChild(el("div", {class:"repeat-controls"}, [
+    el("button", {class:"round-btn", onclick:function(){ stepTracker(p, c, tr.id, -1); }}, ["–"]),
+    el("div", {style:"display:flex;flex-direction:column;align-items:center;min-width:110px;"}, [
+      el("div", {class:"count"}, ["Rang " + r]),
+      el("div", {class:"small-note"}, ["sur " + total + " · répétition " + (tr.repeat || 1)])
+    ]),
+    el("button", {class:"round-btn", title:"Rang fait", onclick:function(){ stepTracker(p, c, tr.id, 1); }}, ["✓"])
+  ]));
+  var g = c.grid;
+  if (g && g.cells && g.cells[r - 1]){
+    box.appendChild(el("div", {style:"overflow-x:auto;"}, [
+      el("div", {class:"chart-cells", style:"padding:2px 0;"}, g.cells[r - 1].map(function(sym){ return el("div", {class:"chart-cell chart-cell-" + sym}); }))
+    ]));
+  }
+  var note = g && g.notes && g.notes[String(r)];
+  if (note) box.appendChild(el("div", {class:"row-note"}, ["Rang " + r + " : " + note]));
+  if (tr.note) box.appendChild(el("div", {class:"small-note", style:"color:var(--ink);"}, ["Note : " + tr.note]));
+  box.appendChild(el("button", {class:"link-btn", style:"align-self:flex-start;", onclick:function(){
+    state.activeTracker = state.activeTracker || {};
+    state.activeTracker[c.id] = tr.id;
+    state.activePanel = "charts";
+    render();
+  }}, ["Voir la grille entière"]));
   return box;
 }
 
@@ -1780,7 +1990,8 @@ function renderInteractiveGrid(p, c, tr){
   rowNumbers.forEach(function(r){
     var cells = grid.cells[r-1] || [];
     var hasNote = grid.notes && grid.notes[String(r)];
-    var rowClass = "chart-row" + (curRow === r ? " current" : "") + (r < curRow ? " done" : "");
+    var offRow = r > chartRepeat(c);
+    var rowClass = "chart-row" + (curRow === r ? " current" : "") + (r < curRow ? " done" : "") + (offRow ? " off" : "");
     var cellEls = cells.map(function(sym, ci){
       return el("div", {
         class: "chart-cell chart-cell-" + sym,
@@ -1792,7 +2003,7 @@ function renderInteractiveGrid(p, c, tr){
     scroll.appendChild(el("div", {
       class: rowClass,
       title: editing ? "" : "Taper : rang " + r + " fait",
-      onclick: editing ? null : function(){ markRowDone(p, c, tr.id, r); }
+      onclick: (editing || offRow) ? null : function(){ markRowDone(p, c, tr.id, r); }
     }, [
       el("div", {class:"chart-rownum"}, [String(r)]),
       el("div", {class:"chart-cells"}, cellEls),
@@ -1852,7 +2063,7 @@ function cloneChartsWithTarget(p, chartId){
 function persistCharts(p){
   var ref = currentRef();
   if (ref) queueWrite(function(){
-    var clean = (p.charts || []).map(function(c){ var copy = Object.assign({}, c); delete copy._busy; delete copy._error; return copy; });
+    var clean = (p.charts || []).map(function(c){ var copy = Object.assign({}, c); delete copy._busy; delete copy._error; delete copy._notesBusy; delete copy._sizeBusy; return copy; });
     return ref.update({ charts: clean, updatedAt: new Date().toISOString() });
   }).catch(function(e){ console.error(e); });
 }
@@ -1877,11 +2088,29 @@ function assetIdToBlob(imageId){
   });
 }
 
+var CHART_NOTE_RULE = "Pour chaque note : indique d'abord les mailles concernées (numéros de colonnes tels qu'affichés sous la grille, la colonne 1 étant tout à droite), "
+  + "puis reprends MOT POUR MOT, dans la langue d'origine du patron, l'explication que le patron donne pour ce symbole (légende, abréviations ou paragraphe "
+  + "qui explique les torsades / points spéciaux), précédée de son nom s'il en a un (ex : « C8F : Place 4 sts onto a cable needle in front of the work... »). "
+  + "Ne reformule pas, ne traduis pas et n'invente aucune technique. Si le patron n'explique pas ce symbole, décris seulement le symbole tel qu'il est dessiné, en une phrase.";
+
+function patternTextForCharts(raw){
+  raw = String(raw || "");
+  if (!raw.trim()) return "";
+  return "\n\n--- TEXTE DU PATRON (pour retrouver la légende et l'explication exacte des symboles) ---\n" + raw.slice(0, 30000);
+}
+
 function chartGridPrompt(hints){
   var hint = "";
   if (hints && hints.name) hint += " Il s'agit de la grille « " + hints.name + " ».";
   if (hints && hints.rows) hint += " La grille fait environ " + hints.rows + " rangs de haut.";
   if (hints && hints.cols) hint += " Elle fait environ " + hints.cols + " mailles de large.";
+  var sizeRule = "";
+  if (hints && hints.size){
+    sizeRule = "\n\nHauteur selon la taille : la tricoteuse fait la taille « " + hints.size.label + " »"
+      + (hints.size.count > 1 ? " (position " + (hints.size.index + 1) + " sur " + hints.size.count + " dans les séquences entre parenthèses du patron)" : "")
+      + ". Si la hauteur de la répétition dépend de la taille (ex : « 52 (52) 54 (54) 56 (56) rows » dans le texte, ou repères de taille dessinés sur la grille), "
+      + "mets dans \"repeatRows\" le nombre de rangs de la répétition pour CETTE taille ; sinon repeatRows = rows. \"rows\" et \"cells\" décrivent toujours la grille entière dessinée.";
+  }
   return "Voici l'image d'une grille (chart) de tricot." + hint + " L'image peut contenir d'autres éléments autour (texte, légende, autre grille) : ne convertis que cette grille-là. Convertis-la en une grille de cases structurée, case par case.\n\n"
     + "Utilise UNIQUEMENT ces 3 types de case :\n"
     + "- \"k\" : maille endroit sur l'endroit (case vide sur le diagramme)\n"
@@ -1891,10 +2120,11 @@ function chartGridPrompt(hints){
     + "La première ligne du tableau \"cells\" (index 0) doit correspondre au rang 1, tout en bas de la grille. Chaque ligne doit avoir exactement "
     + "\"cols\" éléments, dans l'ordre de lecture du diagramme sur l'endroit (de droite à gauche tel qu'affiché, mais stocke-les dans l'ordre gauche "
     + "à droite du tableau, colonne 0 = la maille la plus à gauche du diagramme). Pour chaque rang qui contient au moins une case \"x\", ajoute une "
-    + "entrée dans \"notes\" (clé = numéro du rang en texte) avec une description concise et actionnable de la manœuvre à cet endroit du rang.\n\n"
+    + "entrée dans \"notes\" (clé = numéro du rang en texte). " + CHART_NOTE_RULE + "\n\n"
     + "Réponds uniquement avec un JSON de cette forme exacte, sans texte autour :\n"
-    + "{\"rows\": number, \"cols\": number, \"legend\": [{\"symbol\": \"k\"|\"p\"|\"x\", \"meaning\": string}], "
-    + "\"cells\": [[\"k\"|\"p\"|\"x\", ...], ...], \"notes\": {\"numéro de rang\": \"description\"}}";
+    + sizeRule + "\n\n" + "{\"rows\": number, \"repeatRows\": number, \"cols\": number, \"legend\": [{\"symbol\": \"k\"|\"p\"|\"x\", \"meaning\": string}], "
+    + "\"cells\": [[\"k\"|\"p\"|\"x\", ...], ...], \"notes\": {\"numéro de rang\": \"description\"}}"
+    + patternTextForCharts(hints && hints.patternText);
 }
 
 function parseChartGrid(data, fallbackRows, fallbackCols){
@@ -1916,7 +2146,9 @@ function parseChartGrid(data, fallbackRows, fallbackCols){
   if (data && data.notes && typeof data.notes === "object"){
     Object.keys(data.notes).forEach(function(k){ notes[String(k)] = String(data.notes[k]); });
   }
-  return { rows: rows, cols: cols, cells: cells, notes: notes };
+  var repeatRows = parseInt(data && data.repeatRows, 10);
+  repeatRows = (repeatRows > 0 && repeatRows <= 1000) ? repeatRows : null;
+  return { rows: rows, cols: cols, cells: cells, notes: notes, repeatRows: repeatRows };
 }
 
 function readChartGrid(blob, hints){
@@ -1933,9 +2165,11 @@ function generateChartGrid(p, c){
   p.charts = res.charts;
   target._busy = true; target._error = null; render();
   assetIdToBlob(c.imageId).then(function(blob){
-    return readChartGrid(blob, { rows: c.totalRows, cols: c.cols, name: c.name });
+    return readChartGrid(blob, { rows: c.totalRows, cols: c.cols, name: c.name, patternText: p.rawText, size: sizeHints(p.sizes, p.sizeIndex) });
   }).then(function(grid){
     target._busy = false;
+    if (grid.repeatRows) target.repeatRows = grid.repeatRows;
+    delete grid.repeatRows;
     target.grid = grid;
     target.totalRows = grid.rows;
     target.cols = grid.cols;
@@ -1947,6 +2181,47 @@ function generateChartGrid(p, c){
     target._busy = false;
     var raw = (err && err.code) ? (err.code + (err.message ? " — " + err.message : "")) : (err && err.message ? err.message : String(err));
     target._error = sampleErrorMessage(err) + " (" + raw + ") Réessaie, ou continue avec le compteur simple.";
+    render();
+  });
+}
+
+// Rewrite only the per-row notes, quoting the pattern's own instructions.
+// Cells (and any manual corrections) are left untouched.
+function regenerateChartNotes(p, c){
+  if (!sample || !c.imageId || !c.grid) return;
+  var res = cloneChartsWithTarget(p, c.id);
+  if (!res.target) return;
+  var target = res.target;
+  p.charts = res.charts;
+  target._notesBusy = true; target._error = null; render();
+  var g = c.grid, lines = [];
+  for (var r = 1; r <= g.rows; r++){
+    var cols = [];
+    (g.cells[r - 1] || []).forEach(function(v, ci){ if (v === "x") cols.push(g.cols - ci); });
+    if (cols.length) lines.push("Rang " + r + " : colonnes " + cols.sort(function(a, b){ return a - b; }).join(", "));
+  }
+  if (!lines.length){ target._notesBusy = false; render(); return; }
+  assetIdToBlob(c.imageId).then(function(blob){
+    var prompt = "Voici l'image d'une grille de tricot" + (c.name ? " (« " + c.name + " »)" : "") + ". Les cases de manœuvre spéciale (torsades, augmentations, diminutions...) "
+      + "se trouvent aux positions suivantes (colonnes numérotées comme sous la grille, la colonne 1 étant tout à droite) :\n" + lines.join("\n") + "\n\n"
+      + "Pour chacun de ces rangs, écris une note. " + CHART_NOTE_RULE + "\n\n"
+      + "Réponds uniquement avec un JSON de cette forme exacte : {\"notes\": {\"numéro de rang\": \"note\"}}" + patternTextForCharts(p.rawText);
+    return sample.json(prompt, { images: blob, modelTier: "default", cache: false });
+  }).then(function(data){
+    target._notesBusy = false;
+    var notes = {};
+    if (data && data.notes && typeof data.notes === "object"){
+      Object.keys(data.notes).forEach(function(k){ notes[String(k)] = String(data.notes[k]); });
+    }
+    if (Object.keys(notes).length){
+      target.grid = Object.assign({}, target.grid, { notes: notes });
+      persistCharts(p);
+    }
+    render();
+  }).catch(function(err){
+    console.error(err);
+    target._notesBusy = false;
+    target._error = sampleErrorMessage(err) + " Les explications n'ont pas pu être refaites.";
     render();
   });
 }
@@ -1997,9 +2272,10 @@ function cropCanvas(src, box){
 function detectAndReadCharts(w, onProgress){
   var pdf = w.pdfDoc;
   onProgress = onProgress || function(){};
-  if (!sample || !pdf || typeof sample.limits !== "function") return Promise.resolve([]);
+  w.scan = { errors: [], detected: 0, unreadable: 0, imagesUnavailable: false };
+  if (!sample || !pdf || typeof sample.limits !== "function"){ w.scan.imagesUnavailable = true; return Promise.resolve([]); }
   return sample.limits().catch(function(){ return null; }).then(function(lim){
-    if (!lim || !lim.images) return [];
+    if (!lim || !lim.images){ w.scan.imagesUnavailable = true; return []; }
     var per = Math.max(1, Math.min(lim.images.maxCount || 1, 8));
     var total = Math.min(pdf.numPages, 24);
     var batches = [];
@@ -2022,7 +2298,7 @@ function detectAndReadCharts(w, onProgress){
             + "rows (nombre de rangs de la grille si lisible, sinon null), cols (nombre de mailles de large si lisible, sinon null), "
             + "box ([gauche, haut, droite, bas] : position de la grille dans la page en fractions de 0 à 1, numéros de rangs et de colonnes inclus, sans la légende).\n\n"
             + "Réponds uniquement avec un JSON de cette forme exacte : {\"charts\": [{\"image\": number, \"name\": string, \"rows\": number|null, \"cols\": number|null, \"box\": [number, number, number, number]}]}. "
-            + "S'il n'y a aucune grille, réponds {\"charts\": []}.";
+            + "S'il n'y a aucune grille, réponds {\"charts\": []}." + chartTextHint(w.rawText);
           return sample.json(prompt, { images: blobs, modelTier: "default" });
         }).then(function(res){
           var list = (res && Array.isArray(res.charts)) ? res.charts : [];
@@ -2031,10 +2307,11 @@ function detectAndReadCharts(w, onProgress){
             if (!k || k < 1 || k > batch.length) return;
             found.push({ page: batch[k - 1], name: String((ch && ch.name) || "").slice(0, 80), rows: parseInt(ch.rows, 10) || null, cols: parseInt(ch.cols, 10) || null, box: normBox(ch.box) });
           });
-        }).catch(function(err){ console.error("chart detection failed", err); });
+        }).catch(function(err){ console.error("chart detection failed", err); w.scan.errors.push((err && err.code) || "erreur"); });
       });
     }, Promise.resolve()).then(function(){
       found = found.slice(0, 6);
+      w.scan.detected = found.length;
       var out = [];
       return found.reduce(function(chain, f, idx){
         return chain.then(function(){
@@ -2045,13 +2322,14 @@ function detectAndReadCharts(w, onProgress){
             var upload = assets
               ? assets.upload(blob).then(function(r){ return r.id; }).catch(function(e){ console.error("chart upload failed", e); return null; })
               : Promise.resolve(null);
-            var read = readChartGrid(blob, { rows: f.rows, cols: f.cols, name: f.name }).catch(function(e){ console.error("chart read failed", e); return null; });
+            var read = readChartGrid(blob, { rows: f.rows, cols: f.cols, name: f.name, patternText: w.rawText, size: sizeHints(w.sizes, w.sizeIndex) }).catch(function(e){ console.error("chart read failed", e); w.scan.unreadable++; w.scan.errors.push((e && e.code) || "erreur"); return null; });
             return Promise.all([upload, read]);
           }).then(function(r){
             var imageId = r[0], grid = r[1];
             if (!imageId && !grid) return;
             out.push({ id: newChartId(), name: f.name || ("Grille " + (idx + 1)), imageId: imageId || null,
               totalRows: grid ? grid.rows : (f.rows || 1), cols: grid ? grid.cols : (f.cols || 18),
+              repeatRows: (grid && grid.repeatRows) || null,
               currentRow: 1, grid: grid, pdfPage: f.page });
           }).catch(function(e){ console.error("chart extraction failed", e); });
         });
@@ -2060,27 +2338,88 @@ function detectAndReadCharts(w, onProgress){
   }).catch(function(err){ console.error("charts", err); return []; });
 }
 
+function chartTextHint(raw){
+  raw = String(raw || "");
+  var re = /(chart|grille|diagram|diagramme|schéma de point)/ig, m, bits = [], last = -1000;
+  while ((m = re.exec(raw)) && bits.length < 4){
+    if (m.index - last < 200) continue;
+    last = m.index;
+    bits.push(raw.slice(Math.max(0, m.index - 60), m.index + 160).replace(/\s+/g, " ").trim());
+  }
+  if (!bits.length) return "";
+  return "\n\nPour info, le texte du patron mentionne ceci au sujet de ses grilles (elles peuvent être en fin de patron) :\n- " + bits.join("\n- ");
+}
+
+function chartScanNote(scan, foundCount){
+  if (!scan) return "";
+  if (foundCount) return foundCount + (foundCount > 1 ? " grilles trouvées" : " grille trouvée") + " dans le PDF"
+    + (scan.unreadable ? " (" + scan.unreadable + " repérée(s) mais pas lue(s) : utilise « Essayer de la générer avec l'IA » ou remplis-la à la main)." : ".");
+  if (scan.imagesUnavailable) return "La recherche de grilles a besoin de la lecture d'images, qui n'est pas disponible dans cette vue de Claude. Essaie depuis un navigateur sur ordinateur.";
+  if (scan.errors.length) return "La recherche de grilles a échoué (" + scan.errors.slice(0, 3).join(", ") + "). Tu peux la relancer.";
+  return "Aucune grille repérée dans le PDF. Tu peux relancer la recherche, ou ajouter la grille à partir d'une photo.";
+}
+
+// Re-run the chart search on an existing project: the PDF isn't stored, so
+// the knitter picks the file again.
+function rescanChartsFromPdf(p){
+  var inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "application/pdf,.pdf"; inp.style.display = "none";
+  inp.onchange = function(){
+    var f = inp.files && inp.files[0]; inp.remove();
+    if (!f) return;
+    state.chartsPending = state.chartsPending || {};
+    state.chartsPending[p.id] = "Lecture du PDF...";
+    render();
+    f.arrayBuffer().then(function(buf){
+      return loadPdfJs().then(function(){
+        try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; } catch(e){}
+        return window.pdfjsLib.getDocument({ data: buf }).promise;
+      });
+    }).then(function(pdf){
+      var w = { pdfDoc: pdf, rawText: p.rawText || "", projectId: p.id, sizes: p.sizes || [], sizeIndex: p.sizeIndex || 0 };
+      w.chartsPromise = detectAndReadCharts(w, function(msg){
+        w.chartNote = msg;
+        if (state.chartsPending && state.chartsPending[p.id]){
+          state.chartsPending[p.id] = msg;
+          if (state.view === "project" && state.currentId === p.id && state.activePanel !== "edit") render();
+        }
+      });
+      attachPdfCharts(w, p.id);
+    }).catch(function(err){
+      console.error(err);
+      delete state.chartsPending[p.id];
+      state.error = "Impossible de lire ce PDF.";
+      render();
+    });
+  };
+  document.body.appendChild(inp);
+  inp.click();
+}
+
 function attachPdfCharts(w, projectId){
   w.projectId = projectId;
   state.chartsPending = state.chartsPending || {};
   state.chartsPending[projectId] = w.chartNote || "Recherche de grilles dans le PDF...";
   render();
   w.chartsPromise.then(function(found){
+    found = found || [];
     delete state.chartsPending[projectId];
-    if (!found || !found.length){
-      if (state.activePanel !== "edit") render();
-      return;
-    }
+    var scan = { at: new Date().toISOString(), found: found.length, note: chartScanNote(w.scan, found.length) };
     var ref = db.collection("projects").doc(projectId);
     var live = (state.currentDoc && state.currentDoc.id === projectId) ? state.currentDoc : null;
     var existingP = live ? Promise.resolve(live.charts || []) : ref.get().then(function(snap){ return (snap.exists && snap.data().charts) || []; });
     existingP.then(function(existing){
       var charts = existing.concat(found);
-      if (state.currentDoc && state.currentDoc.id === projectId) state.currentDoc.charts = charts;
+      if (state.currentDoc && state.currentDoc.id === projectId){
+        state.currentDoc.charts = charts;
+        state.currentDoc.chartScan = scan;
+      }
       state.chartsFound = state.chartsFound || {};
-      state.chartsFound[projectId] = found.length;
+      state.chartsFound[projectId] = { n: found.length, note: scan.note };
       if (state.activePanel !== "edit") render();
-      queueWrite(function(){ return ref.update({ charts: charts, updatedAt: new Date().toISOString() }); }).catch(function(e){ console.error(e); });
+      var patch = { chartScan: scan };
+      if (found.length){ patch.charts = charts; patch.updatedAt = new Date().toISOString(); }
+      queueWrite(function(){ return ref.update(patch); }).catch(function(e){ console.error(e); });
     });
   });
 }
@@ -2253,7 +2592,7 @@ function exportProject(p){
   Promise.all([Promise.all(imgJobs), coverJob]).then(function(r){
     var chartImgs = r[0], cover = r[1];
     charts.forEach(function(c, k){
-      delete c.imageId; delete c._busy; delete c._error; delete c.imageData;
+      delete c.imageId; delete c._busy; delete c._error; delete c._notesBusy; delete c.imageData;
       if (chartImgs[k]) c.imageData = chartImgs[k];
     });
     var project = {
